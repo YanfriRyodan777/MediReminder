@@ -6,8 +6,8 @@
 
 // ── Configuración ─────────────────────────────────────────────
 // SUPABASE: Supabase → Project Settings → API
-const SUPABASE_URL  = 'https://TU-PROYECTO.supabase.co';
-const SUPABASE_ANON = 'TU-ANON-PUBLIC-KEY';
+const SUPABASE_URL  = 'https://vcwvysziqiftbztfdzaa.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_IiBeEMSHP6ai3GD722WPoQ_0ynzRvH6';
 
 // BACKEND: URL de tu servidor en Render (sin barra final)
 // En desarrollo local: 'http://localhost:3001'
