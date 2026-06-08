@@ -14,7 +14,7 @@ const SUPABASE_ANON = 'sb_publishable_IiBeEMSHP6ai3GD722WPoQ_0ynzRvH6';
 // En producción:       'https://medireminder-api.onrender.com'
 // En desarrollo local usa: 'http://localhost:3000'
 // En producción (Render):  'https://TU-SERVICIO.onrender.com'
-const BACKEND_URL = 'https://TU-SERVICIO.onrender.com';
+const BACKEND_URL = 'https://medireminder-ywl9.onrender.com';
 
 // ── Cliente Supabase (solo para Auth) ─────────────────────────
 const { createClient } = supabase;
