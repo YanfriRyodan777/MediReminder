@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>MediReminder — Administrar Medicamentos</title>
+  <link rel="stylesheet" href="estilos.css"/>
+</head>
+<body>
+<div id="toast-caja"></div>
+<div id="nav-contenedor"></div>
+
+<!-- Modal confirmar eliminar -->
+<div id="modal-eliminar" class="modal-fondo" style="display:none" role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
+  <div class="modal-caja">
+    <p class="modal-titulo">🗑️ Eliminar Medicamento</p>
+    <p class="modal-texto">¿Eliminar <strong id="modal-nombre-med"></strong>? Esta acción no se puede deshacer y borrará todo su historial.</p>
+    <div class="modal-pies">
+      <button class="btn btn-borde" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-rojo"  onclick="confirmarEliminar()">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<main class="pagina" role="main">
+  <div class="espacio">
+
+    <!-- Encabezado -->
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h1 style="font-size:1.5rem;font-weight:900">Administrar Medicamentos</h1>
+        <p style="color:var(--g500);margin-top:.25rem">Configura horarios, dosis e imágenes de tus medicinas</p>
+      </div>
+      <button class="btn btn-azul" id="btn-nuevo" onclick="abrirFormulario()">➕ Nueva Medicina</button>
+    </div>
+
+    <!-- Formulario agregar / editar -->
+    <div id="formulario" class="card" style="display:none">
+      <h2 id="form-titulo" style="font-size:1.1rem;font-weight:900;margin-bottom:1.25rem">Nueva Medicina</h2>
+
+      <div class="fila2" style="margin-bottom:.875rem">
+        <div class="campo-grupo">
+          <label class="campo-label" for="inp-med-nombre">Nombre del Medicamento *</label>
+          <input type="text" id="inp-med-nombre" class="campo-input" placeholder="ej. Aspirina"/>
+        </div>
+        <div class="campo-grupo">
+          <label class="campo-label" for="inp-med-dosis">Dosis *</label>
+          <input type="text" id="inp-med-dosis" class="campo-input" placeholder="ej. 100mg"/>
+        </div>
+      </div>
+
+      <div class="campo-grupo" style="margin-bottom:.875rem">
+        <label class="campo-label">Horarios de Toma *</label>
+        <div id="contenedor-horarios" style="display:flex;flex-direction:column;gap:.5rem"></div>
+        <button class="btn btn-borde btn-sm w100" style="margin-top:.5rem;border-style:dashed" onclick="agregarHorario()">
+          ➕ Agregar Horario
+        </button>
+      </div>
+
+      <div class="campo-grupo" style="margin-bottom:.875rem">
+        <label class="campo-label" for="inp-med-instruc">Instrucciones (opcional)</label>
+        <textarea id="inp-med-instruc" class="campo-input" rows="2" placeholder="ej. Tomar con alimentos, evitar sol..."></textarea>
+      </div>
+
+      <!-- Foto del medicamento -->
+      <div class="campo-grupo" style="margin-bottom:.875rem">
+        <label class="campo-label">Foto del Medicamento (opcional)</label>
+        <div id="zona-foto">
+          <label class="zona-upload" for="inp-foto" aria-label="Subir foto del medicamento">
+            <div class="empty-icon" style="font-size:2rem">📷</div>
+            <p style="font-size:.875rem;color:var(--g500);font-weight:600">Haz clic para subir una foto</p>
+            <p style="font-size:.75rem;color:var(--g400)">Ayuda a identificar visualmente la medicina</p>
+          </label>
+          <input type="file" id="inp-foto" accept="image/*" style="display:none" onchange="previsualizarFoto(this)"/>
+        </div>
+        <div id="preview-foto" style="display:none;position:relative;width:fit-content">
+          <img id="img-preview" src="" alt="Vista previa" style="width:100px;height:100px;object-fit:cover;border-radius:var(--r);border:2px solid var(--g200)"/>
+          <button onclick="quitarFoto()" aria-label="Quitar foto"
+            style="position:absolute;top:-8px;right:-8px;background:var(--rojo);color:white;border-radius:50%;width:24px;height:24px;font-size:.75rem;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:.625rem;margin-bottom:1.25rem">
+        <input type="checkbox" id="chk-activo" checked style="width:16px;height:16px;accent-color:var(--azul)"/>
+        <label for="chk-activo" style="font-size:.9rem;font-weight:700;color:var(--g700)">Medicamento activo</label>
+      </div>
+
+      <div class="fila2">
+        <button class="btn btn-azul w100" onclick="guardarMedicamento()">
+          💾 <span id="btn-guardar-txt">Agregar Medicina</span>
+        </button>
+        <button class="btn btn-borde w100" onclick="cerrarFormulario()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="card">
+      <div class="sec-header">
+        <h2 class="sec-titulo">💊 Medicamentos (<span id="cnt-meds">0</span>)</h2>
+      </div>
+      <div id="carga-meds" class="cargando"><div class="spinner"></div><p>Cargando...</p></div>
+      <div id="lista-meds" class="espacio"></div>
+      <div id="vacio-meds" class="empty" style="display:none">
+        <div class="empty-icon">💊</div>
+        <p>No hay medicamentos registrados. ¡Agrega uno!</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-cliente.js"></script>
+<script src="navegacion.js"></script>
+<script src="tutorial.js"></script>
+<script>
+  let medicamentos = [];
+  let editandoId   = null;
+  let fotoBase64   = '';
+  let horarios     = [''];
+  let idAEliminar  = null;
+
+  (async () => {
+    if (!await Sesion.requiereAuth()) return;
+    await inyectarNavegacion('medicamentos');
+    mostrarTutorial();
+    await cargarMedicamentos();
+  })();
+
+  async function cargarMedicamentos() {
+    try {
+      medicamentos = await Medicamentos.obtenerTodos();
+      renderizarLista();
+    } catch (e) { Toast.err(e.message); }
+    finally { document.getElementById('carga-meds').style.display = 'none'; }
+  }
+
+  function renderizarLista() {
+    const lista = document.getElementById('lista-meds');
+    document.getElementById('cnt-meds').textContent = medicamentos.length;
+    if (!medicamentos.length) {
+      lista.innerHTML = '';
+      document.getElementById('vacio-meds').style.display = 'block';
+      return;
+    }
+    document.getElementById('vacio-meds').style.display = 'none';
+    lista.innerHTML = medicamentos.map(m => `
+      <div class="med-card" role="article" aria-label="Medicamento ${m.name}">
+        <div class="med-header">
+          <div style="display:flex;gap:.875rem;align-items:flex-start;flex:1">
+            ${m.imageUrl ? `<img src="${m.imageUrl}" alt="${m.name}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r-sm);border:2px solid var(--g200);flex-shrink:0"/>` : ''}
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+                <p class="med-nombre">💊 ${m.name}</p>
+                ${!m.active ? '<span class="badge b-gris">Inactivo</span>' : ''}
+              </div>
+              <p class="med-dosis">Dosis: ${m.dosage}</p>
+              <div class="med-horarios" style="margin-top:.5rem">
+                ${(m.times||[]).map(h => `<span class="hora-chip">🕐 ${h}</span>`).join('')}
+              </div>
+              ${m.instructions ? `<p style="font-size:.82rem;color:var(--g500);margin-top:.4rem;font-style:italic">${m.instructions}</p>` : ''}
+            </div>
+          </div>
+          <div class="med-actions">
+            <button class="btn-icon btn-icon-edit" onclick="editarMedicamento('${m.id}')" title="Editar" aria-label="Editar ${m.name}">✏️</button>
+            <button class="btn-icon btn-icon-del"  onclick="pedirEliminar('${m.id}','${m.name.replace(/'/g,"\\'")}')" title="Eliminar" aria-label="Eliminar ${m.name}">🗑️</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function abrirFormulario() {
+    editandoId = null; fotoBase64 = ''; horarios = [''];
+    document.getElementById('form-titulo').textContent = 'Nueva Medicina';
+    document.getElementById('btn-guardar-txt').textContent = 'Agregar Medicina';
+    document.getElementById('inp-med-nombre').value = '';
+    document.getElementById('inp-med-dosis').value  = '';
+    document.getElementById('inp-med-instruc').value = '';
+    document.getElementById('chk-activo').checked = true;
+    quitarFoto();
+    renderizarHorarios();
+    document.getElementById('formulario').style.display = 'block';
+    document.getElementById('btn-nuevo').style.display  = 'none';
+    document.getElementById('inp-med-nombre').focus();
+  }
+
+  function cerrarFormulario() {
+    document.getElementById('formulario').style.display = 'none';
+    document.getElementById('btn-nuevo').style.display  = 'flex';
+    editandoId = null;
+  }
+
+  function renderizarHorarios() {
+    document.getElementById('contenedor-horarios').innerHTML = horarios.map((h, i) => `
+      <div style="display:flex;gap:.5rem">
+        <input type="time" value="${h}" class="campo-input" style="flex:1" aria-label="Horario ${i+1}"
+          onchange="horarios[${i}]=this.value"/>
+        ${horarios.length > 1 ? `<button class="btn-icon btn-icon-del" onclick="quitarHorario(${i})" aria-label="Quitar horario ${i+1}">✕</button>` : ''}
+      </div>`).join('');
+  }
+
+  function agregarHorario() { horarios.push(''); renderizarHorarios(); }
+  function quitarHorario(i) { horarios.splice(i, 1); renderizarHorarios(); }
+
+  function previsualizarFoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { Toast.warn('La imagen no puede superar 5MB'); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      fotoBase64 = reader.result;
+      document.getElementById('img-preview').src = fotoBase64;
+      document.getElementById('zona-foto').style.display    = 'none';
+      document.getElementById('preview-foto').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function quitarFoto() {
+    fotoBase64 = '';
+    document.getElementById('img-preview').src = '';
+    document.getElementById('zona-foto').style.display    = 'block';
+    document.getElementById('preview-foto').style.display = 'none';
+    document.getElementById('inp-foto').value = '';
+  }
+
+  async function guardarMedicamento() {
+    const nombre  = document.getElementById('inp-med-nombre').value.trim();
+    const dosis   = document.getElementById('inp-med-dosis').value.trim();
+    const tiempos = horarios.filter(h => h.trim());
+
+    if (!nombre || !dosis)   { Toast.warn('Nombre y dosis son obligatorios.'); return; }
+    if (!tiempos.length)     { Toast.warn('Agrega al menos un horario.'); return; }
+
+    const datos = {
+      name:         nombre,
+      dosage:       dosis,
+      times:        tiempos,
+      instructions: document.getElementById('inp-med-instruc').value.trim() || null,
+      active:       document.getElementById('chk-activo').checked,
+      imageUrl:     fotoBase64 || null,
+    };
+
+    try {
+      if (editandoId) {
+        const act = await Medicamentos.actualizar(editandoId, datos);
+        medicamentos = medicamentos.map(m => m.id === editandoId ? act : m);
+        Toast.ok('Medicamento actualizado correctamente.');
+      } else {
+        const nuevo = await Medicamentos.crear(datos);
+        medicamentos.push(nuevo);
+        Toast.ok('Medicamento agregado. 💊');
+      }
+      renderizarLista();
+      cerrarFormulario();
+    } catch (e) { Toast.err(e.message); }
+  }
+
+  function editarMedicamento(id) {
+    const m = medicamentos.find(x => x.id === id);
+    if (!m) return;
+    editandoId = id;
+    document.getElementById('form-titulo').textContent = 'Editar Medicina';
+    document.getElementById('btn-guardar-txt').textContent = 'Guardar Cambios';
+    document.getElementById('inp-med-nombre').value  = m.name;
+    document.getElementById('inp-med-dosis').value   = m.dosage;
+    document.getElementById('inp-med-instruc').value = m.instructions || '';
+    document.getElementById('chk-activo').checked    = m.active;
+    horarios = m.times?.length ? [...m.times] : [''];
+    renderizarHorarios();
+    if (m.imageUrl) {
+      fotoBase64 = m.imageUrl;
+      document.getElementById('img-preview').src = m.imageUrl;
+      document.getElementById('zona-foto').style.display    = 'none';
+      document.getElementById('preview-foto').style.display = 'block';
+    } else { quitarFoto(); }
+    document.getElementById('formulario').style.display = 'block';
+    document.getElementById('btn-nuevo').style.display  = 'none';
+    document.getElementById('inp-med-nombre').focus();
+  }
+
+  function pedirEliminar(id, nombre) {
+    idAEliminar = id;
+    document.getElementById('modal-nombre-med').textContent = nombre;
+    document.getElementById('modal-eliminar').style.display = 'flex';
+  }
+  function cerrarModal() {
+    idAEliminar = null;
+    document.getElementById('modal-eliminar').style.display = 'none';
+  }
+  async function confirmarEliminar() {
+    if (!idAEliminar) return;
+    try {
+      await Medicamentos.eliminar(idAEliminar);
+      medicamentos = medicamentos.filter(m => m.id !== idAEliminar);
+      renderizarLista();
+      Toast.ok('Medicamento eliminado.');
+    } catch (e) { Toast.err(e.message); }
+    cerrarModal();
+  }
+</script>
+</body>
+</html>

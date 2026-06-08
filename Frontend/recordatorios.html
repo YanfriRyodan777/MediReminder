@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>MediReminder — Mis Recordatorios</title>
+  <link rel="stylesheet" href="estilos.css"/>
+</head>
+<body>
+<div id="toast-caja"></div>
+<div id="nav-contenedor"></div>
+
+<!-- ── Alerta de pantalla completa ─────────────────────── -->
+<div id="alerta" class="alerta-pantalla" style="display:none" role="alertdialog" aria-modal="true" aria-label="Recordatorio de medicina">
+  <div class="alerta-caja">
+    <span class="alerta-campana" aria-hidden="true">🔔</span>
+    <h2 class="alerta-titulo">¡Hora de tu medicina!</h2>
+    <div class="alerta-info">
+      <p class="alerta-med-nombre" id="alerta-nombre">—</p>
+      <p class="alerta-med-hora">Hora programada: <strong id="alerta-hora">—</strong></p>
+    </div>
+    <div class="alerta-botones">
+      <button class="btn btn-verde btn-xl" onclick="confirmarTomada()" aria-label="Marcar como tomada">
+        ✅ Ya la tomé
+      </button>
+      <button class="btn btn-rojo btn-xl" onclick="confirmarOmitida()" aria-label="Omitir medicina">
+        ✗ Omitir
+      </button>
+    </div>
+    <div class="alerta-posponer">
+      <button class="btn btn-amarillo btn-lg" onclick="posponer(5)">⏱ Posponer 5 min</button>
+      <button class="btn btn-amarillo btn-lg" onclick="posponer(10)">⏱ Posponer 10 min</button>
+      <button class="btn btn-amarillo btn-lg" onclick="posponer(15)">⏱ Posponer 15 min</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Contenido ────────────────────────────────────────── -->
+<main class="pagina" role="main">
+  <div class="espacio">
+
+    <!-- Encabezado con fecha/hora -->
+    <div class="card">
+      <h1 style="font-size:1.6rem;font-weight:900">Tus Medicinas de Hoy</h1>
+      <p id="fecha-hoy" style="color:var(--g500);font-size:1rem;margin-top:.25rem"></p>
+      <p id="hora-actual" style="font-size:1.5rem;font-weight:900;color:var(--azul);margin-top:.2rem"></p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card amarillo">
+        <div class="stat-label">Pendientes</div>
+        <div class="stat-val" id="cnt-pendientes">0</div>
+        <div class="stat-sub">Por tomar hoy</div>
+      </div>
+      <div class="stat-card verde">
+        <div class="stat-label">Tomadas</div>
+        <div class="stat-val" id="cnt-tomadas">0</div>
+        <div class="stat-sub">Completadas ✓</div>
+      </div>
+      <div class="stat-card rojo">
+        <div class="stat-label">Omitidas</div>
+        <div class="stat-val" id="cnt-omitidas">0</div>
+        <div class="stat-sub">No tomadas</div>
+      </div>
+      <div class="stat-card azul">
+        <div class="stat-label">Adherencia</div>
+        <div class="stat-val" id="pct-adherencia">—</div>
+        <div class="stat-sub">Hoy</div>
+      </div>
+    </div>
+
+    <!-- Cargando -->
+    <div id="estado-carga" class="cargando"><div class="spinner"></div><p>Cargando...</p></div>
+
+    <!-- Pendientes -->
+    <div id="sec-pendientes" class="card" style="display:none">
+      <div class="sec-header">
+        <h2 class="sec-titulo">⚠️ Medicinas Pendientes</h2>
+      </div>
+      <div id="lista-pendientes" class="espacio"></div>
+    </div>
+
+    <!-- Tomadas -->
+    <div id="sec-tomadas" class="card" style="display:none">
+      <div class="sec-header">
+        <h2 class="sec-titulo">✅ Tomadas Hoy</h2>
+      </div>
+      <div id="lista-tomadas" class="espacio"></div>
+    </div>
+
+    <!-- Vacío -->
+    <div id="estado-vacio" class="card empty" style="display:none">
+      <div class="empty-icon">💊</div>
+      <p>No tienes medicamentos programados para hoy.</p>
+      <a href="/medicamentos.html" class="btn btn-azul btn-sm" style="margin-top:1rem;display:inline-flex">Agregar Medicamento</a>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-cliente.js"></script>
+<script src="navegacion.js"></script>
+<script src="tutorial.js"></script>
+<script>
+  let meds = [], logs = [], sonidoActivo = true;
+  let logAlerta = null;
+  const pospuestos = new Set();
+  const timers = new Map();
+
+  (async () => {
+    if (!await Sesion.requiereAuth()) return;
+    await inyectarNavegacion('recordatorios');
+    mostrarTutorial();
+    actualizarReloj(); setInterval(actualizarReloj, 30000);
+    await cargar();
+    setInterval(verificarAlertas, 60000);
+  })();
+
+  function actualizarReloj() {
+    const ahora = new Date();
+    document.getElementById('fecha-hoy').textContent = ahora.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('hora-actual').textContent = ahora.toTimeString().slice(0, 5);
+  }
+
+  async function cargar() {
+    try {
+      [meds, logs] = await Promise.all([Medicamentos.obtenerTodos(), Registros.obtenerTodos({ days: 1 })]);
+      const ajustes = await Ajustes.obtener();
+      sonidoActivo = ajustes.soundEnabled;
+      await Registros.generarHoy();
+      logs = await Registros.obtenerTodos({ days: 1 });
+      renderizar(); verificarAlertas();
+    } catch (err) { Toast.err('Error al cargar: ' + err.message); }
+    finally { document.getElementById('estado-carga').style.display = 'none'; }
+  }
+
+  function renderizar() {
+    const hoy = Fecha.hoy();
+    const deHoy = logs.filter(l => l.date === hoy);
+    const pendientes = deHoy.filter(l => l.status === 'pending' && !pospuestos.has(l.id));
+    const tomadas    = deHoy.filter(l => l.status === 'taken');
+    const omitidas   = deHoy.filter(l => l.status === 'missed');
+    const completadas = tomadas.length + omitidas.length;
+    const adh = completadas > 0 ? Math.round((tomadas.length / completadas) * 100) : null;
+
+    document.getElementById('cnt-pendientes').textContent = pendientes.length;
+    document.getElementById('cnt-tomadas').textContent    = tomadas.length;
+    document.getElementById('cnt-omitidas').textContent   = omitidas.length;
+    document.getElementById('pct-adherencia').textContent = adh !== null ? adh + '%' : '—';
+
+    // Pendientes
+    const secP = document.getElementById('sec-pendientes');
+    secP.style.display = pendientes.length ? 'block' : 'none';
+    document.getElementById('lista-pendientes').innerHTML = pendientes.map(log => {
+      const med = meds.find(m => m.id === log.medicineId);
+      return `
+        <div class="pend-card" role="article" aria-label="Medicina pendiente: ${log.medicineName}">
+          <div class="pend-header">
+            ${med?.imageUrl ? `<img src="${med.imageUrl}" alt="${log.medicineName}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-sm);border:2px solid #93c5fd;flex-shrink:0"/>` : ''}
+            <div style="flex:1">
+              <p class="pend-nombre">${log.medicineName}</p>
+              ${med ? `<p class="pend-dosis">${med.dosage}</p>` : ''}
+              ${med?.instructions ? `<p class="pend-instruc">${med.instructions}</p>` : ''}
+            </div>
+            <div class="pend-hora-box">
+              <p class="pend-hora-label">Hora</p>
+              <p class="pend-hora-val">${log.scheduledTime}</p>
+            </div>
+          </div>
+          <div class="pend-acciones">
+            <button class="btn btn-verde btn-lg w100" onclick="accionTomada('${log.id}')" aria-label="Marcar ${log.medicineName} como tomada">✅ Ya la tomé</button>
+            <button class="btn btn-gris btn-lg w100"  onclick="accionOmitida('${log.id}')" aria-label="Omitir ${log.medicineName}">✗ Omitir</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Tomadas
+    const secT = document.getElementById('sec-tomadas');
+    secT.style.display = tomadas.length ? 'block' : 'none';
+    document.getElementById('lista-tomadas').innerHTML = tomadas.map(log => `
+      <div class="log-item tomado" role="listitem">
+        <div class="log-icono tomado">✅</div>
+        <div class="log-info">
+          <p class="log-nombre">${log.medicineName}</p>
+          <p class="log-meta">Programada: ${log.scheduledTime}</p>
+        </div>
+        <div class="log-derecha">
+          <p style="font-size:.75rem;color:var(--g400)">Tomada</p>
+          <p style="font-size:1.2rem;font-weight:900;color:var(--verde)">${log.takenTime || '—'}</p>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('estado-vacio').style.display = !deHoy.length ? 'block' : 'none';
+  }
+
+  function verificarAlertas() {
+    if (logAlerta) return;
+    const hoy  = Fecha.hoy();
+    const hora = Fecha.hora();
+    const pend = logs.find(l =>
+      l.status === 'pending' && l.date === hoy &&
+      l.scheduledTime <= hora && !pospuestos.has(l.id)
+    );
+    if (pend) mostrarAlerta(pend);
+  }
+
+  function mostrarAlerta(log) {
+    logAlerta = log;
+    document.getElementById('alerta-nombre').textContent = log.medicineName;
+    document.getElementById('alerta-hora').textContent   = log.scheduledTime;
+    document.getElementById('alerta').style.display = 'flex';
+    if (sonidoActivo) reproducirAlarma();
+  }
+
+  function ocultarAlerta() { logAlerta = null; document.getElementById('alerta').style.display = 'none'; }
+
+  async function confirmarTomada() { if (logAlerta) { await accionTomada(logAlerta.id); ocultarAlerta(); } }
+  async function confirmarOmitida(){ if (logAlerta) { await accionOmitida(logAlerta.id); ocultarAlerta(); } }
+
+  function posponer(min) {
+    if (!logAlerta) return;
+    const id = logAlerta.id;
+    pospuestos.add(id);
+    ocultarAlerta();
+    if (timers.has(id)) clearTimeout(timers.get(id));
+    timers.set(id, setTimeout(() => {
+      pospuestos.delete(id); timers.delete(id);
+      const log = logs.find(l => l.id === id);
+      if (log && log.status === 'pending') mostrarAlerta(log);
+    }, min * 60000));
+    Toast.info(`Recordatorio pospuesto ${min} minutos`);
+  }
+
+  async function accionTomada(id) {
+    try {
+      const r = await Registros.marcarTomado(id);
+      logs = logs.map(l => l.id === id ? { ...l, status: 'taken', takenTime: r.takenTime } : l);
+      renderizar(); Toast.ok('¡Medicina marcada como tomada! 💊');
+    } catch (err) { Toast.err(err.message); }
+  }
+
+  async function accionOmitida(id) {
+    try {
+      await Registros.marcarOmitido(id);
+      logs = logs.map(l => l.id === id ? { ...l, status: 'missed' } : l);
+      renderizar();
+    } catch (err) { Toast.err(err.message); }
+  }
+</script>
+</body>
+</html>

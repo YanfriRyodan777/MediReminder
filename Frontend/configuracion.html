@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>MediReminder — Configuración</title>
+  <link rel="stylesheet" href="estilos.css"/>
+</head>
+<body>
+<div id="toast-caja"></div>
+<div id="nav-contenedor"></div>
+
+<!-- Modal eliminar contacto -->
+<div id="modal-contacto" class="modal-fondo" style="display:none" role="dialog" aria-modal="true">
+  <div class="modal-caja">
+    <p class="modal-titulo">🗑️ Eliminar Contacto</p>
+    <p class="modal-texto">¿Eliminar a <strong id="modal-nombre-contacto"></strong> de tus contactos de emergencia?</p>
+    <div class="modal-pies">
+      <button class="btn btn-borde" onclick="cerrarModalContacto()">Cancelar</button>
+      <button class="btn btn-rojo"  onclick="confirmarEliminarContacto()">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<main class="pagina" role="main">
+  <div class="espacio">
+
+    <div class="card">
+      <h1 style="font-size:1.5rem;font-weight:900">⚙️ Configuración</h1>
+      <p style="color:var(--g500);margin-top:.25rem">Personaliza tu experiencia con MediReminder</p>
+    </div>
+
+    <!-- ── Perfil ──────────────────────────────────────── -->
+    <div class="card">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:1rem">👤 Perfil de Usuario</h2>
+      <div id="panel-perfil"></div>
+    </div>
+
+    <!-- ── Notificaciones ─────────────────────────────── -->
+    <div class="card">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:1rem">🔔 Notificaciones y Alertas</h2>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem;margin-bottom:.875rem">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span id="icono-vol" style="font-size:1.4rem" aria-hidden="true">🔊</span>
+          <div>
+            <p style="font-weight:800">Sonido de Alarma</p>
+            <p style="font-size:.82rem;color:var(--g500)">Reproducir sonido al momento de la medicina</p>
+          </div>
+        </div>
+        <label class="toggle" aria-label="Activar sonido de alarma">
+          <input type="checkbox" id="switch-sonido" onchange="cambiarSonido(this.checked)"/>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <div style="background:var(--g50);border-radius:var(--r-sm);padding:1rem">
+        <label class="campo-label" for="sel-anticipacion" style="display:block;margin-bottom:.5rem">Recordatorio Anticipado</label>
+        <p style="font-size:.82rem;color:var(--g500);margin-bottom:.625rem">Recibe un aviso antes del horario programado</p>
+        <select id="sel-anticipacion" class="campo-input" onchange="cambiarAnticipacion(this.value)" aria-label="Minutos de anticipación">
+          <option value="0">Sin recordatorio anticipado</option>
+          <option value="5">5 minutos antes</option>
+          <option value="10">10 minutos antes</option>
+          <option value="15">15 minutos antes</option>
+          <option value="30">30 minutos antes</option>
+          <option value="60">1 hora antes</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ── Tema de color ──────────────────────────────── -->
+    <div class="card">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.5rem">🎨 Tema de Color</h2>
+      <p style="font-size:.85rem;color:var(--g500);margin-bottom:1rem">Personaliza el color principal de la aplicación</p>
+      <div id="grilla-temas" style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem"></div>
+    </div>
+
+    <!-- ── Contactos de emergencia ─────────────────────── -->
+    <div class="card">
+      <div class="sec-header">
+        <h2 style="font-size:1rem;font-weight:900">📞 Contactos de Emergencia</h2>
+        <button class="btn btn-azul btn-sm" onclick="abrirFormContacto()">➕ Agregar</button>
+      </div>
+
+      <div id="form-contacto" style="display:none;background:var(--azul-cl);border-radius:var(--r);padding:1rem;margin-top:1rem">
+        <div class="campo-grupo" style="margin-bottom:.75rem">
+          <label class="campo-label" for="inp-c-nombre">Nombre completo</label>
+          <input type="text" id="inp-c-nombre" class="campo-input" placeholder="Nombre del contacto"/>
+        </div>
+        <div class="fila2" style="margin-bottom:.75rem">
+          <div class="campo-grupo">
+            <label class="campo-label" for="inp-c-relacion">Relación</label>
+            <input type="text" id="inp-c-relacion" class="campo-input" placeholder="ej. Hijo/a, Esposo/a"/>
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-label" for="inp-c-telefono">Teléfono</label>
+            <input type="tel" id="inp-c-telefono" class="campo-input" placeholder="+51 999 999 999"/>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem">
+          <input type="checkbox" id="chk-c-principal" style="width:16px;height:16px;accent-color:var(--azul)"/>
+          <label for="chk-c-principal" style="font-size:.9rem;font-weight:700">Contacto principal (notificado primero)</label>
+        </div>
+        <div class="fila2">
+          <button class="btn btn-azul w100" onclick="guardarContacto()"><span id="btn-c-txt">Agregar</span></button>
+          <button class="btn btn-borde w100" onclick="cerrarFormContacto()">Cancelar</button>
+        </div>
+      </div>
+
+      <div id="lista-contactos" class="espacio" style="margin-top:1rem"></div>
+      <div id="vacio-contactos" class="empty" style="display:none">
+        <div class="empty-icon">📞</div>
+        <p>No hay contactos de emergencia registrados.</p>
+      </div>
+    </div>
+
+    <!-- ── Accesibilidad (solo pacientes) ─────────────── -->
+    <div id="panel-accesibilidad" class="card" style="display:none">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.875rem">♿ Accesibilidad</h2>
+      <div style="background:var(--azul-cl);border:1px solid #bfdbfe;border-radius:var(--r-sm);padding:1rem;display:flex;gap:.75rem">
+        <span style="font-size:1.2rem" aria-hidden="true">ℹ️</span>
+        <div>
+          <p style="font-weight:800;color:#1e40af;margin-bottom:.4rem">Diseñado para adultos mayores</p>
+          <ul style="font-size:.875rem;color:#3730a3;display:flex;flex-direction:column;gap:.3rem">
+            <li>✓ Botones grandes y fáciles de presionar</li>
+            <li>✓ Texto grande y legible</li>
+            <li>✓ Alertas visuales muy llamativas</li>
+            <li>✓ Interfaz simple y directa</li>
+            <li>✓ Compatible con lectores de pantalla</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Opciones avanzadas ──────────────────────────── -->
+    <div class="card">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.875rem">🔧 Opciones Avanzadas</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem">
+        <div>
+          <p style="font-weight:800">Reiniciar Tutorial de Bienvenida</p>
+          <p style="font-size:.82rem;color:var(--g500)">Vuelve a ver la guía de inicio</p>
+        </div>
+        <div id="zona-reiniciar">
+          <button class="btn btn-azul btn-sm" onclick="pedirReiniciarTutorial()">Reiniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aviso -->
+    <div style="background:var(--amarillo-cl);border:1px solid #fde047;border-radius:var(--r-lg);padding:1.25rem">
+      <p style="font-size:.875rem;color:#92400e">
+        <strong>⚠️ Aviso:</strong> Tus datos se almacenan de forma segura en Supabase.
+        MediReminder es un apoyo para la adherencia. No reemplaza la consulta médica profesional.
+      </p>
+    </div>
+
+    <p style="text-align:center;font-size:.78rem;color:var(--g400)">MediReminder v1.0.0 — Mejorando la adherencia a tratamientos médicos</p>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-cliente.js"></script>
+<script src="navegacion.js"></script>
+<script src="tutorial.js"></script>
+<script>
+  let contactos = [];
+  let editandoContactoId = null;
+  let idContactoEliminar = null;
+
+  const temas = [
+    { id:'blue',   nombre:'Azul Clásico',    hex:'#3b82f6' },
+    { id:'green',  nombre:'Verde Salud',      hex:'#22c55e' },
+    { id:'purple', nombre:'Púrpura Elegante', hex:'#8b5cf6' },
+    { id:'orange', nombre:'Naranja Energía',  hex:'#f97316' },
+    { id:'rose',   nombre:'Rosa Cuidado',     hex:'#ec4899' },
+  ];
+
+  (async () => {
+    if (!await Sesion.requiereAuth()) return;
+    await inyectarNavegacion('configuracion');
+    mostrarTutorial();
+    await inicializar();
+  })();
+
+  async function inicializar() {
+    try {
+      const [ajustes, ctcts] = await Promise.all([Ajustes.obtener(), Contactos.obtenerTodos()]);
+      contactos = ctcts;
+      document.getElementById('switch-sonido').checked = ajustes.soundEnabled ?? true;
+      actualizarIconoVol(ajustes.soundEnabled ?? true);
+      document.getElementById('sel-anticipacion').value = ajustes.notificationMinutesBefore ?? 5;
+    } catch { /* usa defaults */ }
+    pintarPerfil();
+    pintarTemas();
+    pintarContactos();
+  }
+
+  function pintarPerfil() {
+    const p = Sesion.perfilCache();
+    if (!p) return;
+    const esPac = p.role === 'patient';
+    if (esPac) document.getElementById('panel-accesibilidad').style.display = 'block';
+    document.getElementById('panel-perfil').innerHTML = `
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--g100)">
+        <span style="color:var(--g500)">Nombre</span><span style="font-weight:800">${p.full_name||'—'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--g100)">
+        <span style="color:var(--g500)">Correo</span><span style="font-weight:800">${p.email||'—'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--g100)">
+        <span style="color:var(--g500)">Tipo de cuenta</span>
+        <span class="badge ${esPac?'b-azul':'b-morado'}">${esPac?'🏥 Paciente':'👨‍⚕️ Cuidador'}</span>
+      </div>
+      ${esPac ? `<div style="display:flex;justify-content:space-between;padding:.5rem 0">
+        <span style="color:var(--g500)">Modo</span>
+        <span class="badge ${p.independent_mode?'b-verde':'b-amarillo'}">${p.independent_mode?'🧍 Independiente':'👥 Con Supervisión'}</span>
+      </div>` : ''}`;
+  }
+
+  function actualizarIconoVol(on) { document.getElementById('icono-vol').textContent = on ? '🔊' : '🔇'; }
+  async function cambiarSonido(val) {
+    actualizarIconoVol(val);
+    try { await Ajustes.guardar({ soundEnabled: val }); Toast.ok(val ? 'Sonido activado' : 'Sonido desactivado'); } catch (e) { Toast.err(e.message); }
+  }
+  async function cambiarAnticipacion(val) {
+    try { await Ajustes.guardar({ notificationMinutesBefore: parseInt(val) }); Toast.ok('Recordatorio anticipado guardado.'); } catch (e) { Toast.err(e.message); }
+  }
+
+  function pintarTemas() {
+    const actual = localStorage.getItem('mr_tema') || 'blue';
+    document.getElementById('grilla-temas').innerHTML = temas.map(t => `
+      <button onclick="elegirTema('${t.id}')" aria-label="Tema ${t.nombre}" aria-pressed="${t.id===actual}"
+        style="border:3px solid ${t.id===actual?'#0f172a':'transparent'};border-radius:var(--r);padding:.75rem;background:var(--blanco);cursor:pointer;transition:all .15s">
+        <div style="width:100%;height:38px;background:${t.hex};border-radius:6px;margin-bottom:.4rem"></div>
+        <p style="font-size:.72rem;font-weight:800;color:${t.id===actual?'#0f172a':'var(--g500)'}">${t.nombre}</p>
+        ${t.id===actual ? '<p style="font-size:.65rem;color:var(--g400)">✓ Activo</p>' : ''}
+      </button>`).join('');
+  }
+  async function elegirTema(id) {
+    localStorage.setItem('mr_tema', id);
+    try { await Ajustes.guardar({ theme: id }); } catch { /* opcional */ }
+    pintarTemas();
+    Toast.ok('Tema aplicado.');
+  }
+
+  function pintarContactos() {
+    document.getElementById('vacio-contactos').style.display = contactos.length ? 'none' : 'block';
+    document.getElementById('lista-contactos').innerHTML = contactos.map(c => `
+      <div class="contact-card ${c.isPrimary?'principal':''}" role="article" aria-label="Contacto ${c.name}">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
+            <p style="font-weight:900;font-size:.95rem">${c.name}</p>
+            ${c.isPrimary ? '<span class="badge b-azul">Principal</span>' : ''}
+          </div>
+          <p style="font-size:.82rem;color:var(--g500);font-weight:600">${c.relationship||''}</p>
+          <a href="tel:${c.phone}" style="font-size:.9rem;color:var(--azul);font-weight:700">📞 ${c.phone}</a>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn-icon btn-icon-edit" onclick="editarContacto('${c.id}')" aria-label="Editar ${c.name}">✏️</button>
+          <button class="btn-icon btn-icon-del"  onclick="pedirEliminarContacto('${c.id}','${c.name.replace(/'/g,"\\'")}')" aria-label="Eliminar ${c.name}">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function abrirFormContacto() {
+    editandoContactoId = null;
+    document.getElementById('inp-c-nombre').value    = '';
+    document.getElementById('inp-c-relacion').value  = '';
+    document.getElementById('inp-c-telefono').value  = '';
+    document.getElementById('chk-c-principal').checked = false;
+    document.getElementById('btn-c-txt').textContent = 'Agregar';
+    document.getElementById('form-contacto').style.display = 'block';
+    document.getElementById('inp-c-nombre').focus();
+  }
+  function cerrarFormContacto() {
+    document.getElementById('form-contacto').style.display = 'none';
+    editandoContactoId = null;
+  }
+  function editarContacto(id) {
+    const c = contactos.find(x => x.id === id);
+    if (!c) return;
+    editandoContactoId = id;
+    document.getElementById('inp-c-nombre').value    = c.name;
+    document.getElementById('inp-c-relacion').value  = c.relationship || '';
+    document.getElementById('inp-c-telefono').value  = c.phone;
+    document.getElementById('chk-c-principal').checked = c.isPrimary;
+    document.getElementById('btn-c-txt').textContent = 'Guardar Cambios';
+    document.getElementById('form-contacto').style.display = 'block';
+    document.getElementById('inp-c-nombre').focus();
+  }
+  async function guardarContacto() {
+    const datos = {
+      name:        document.getElementById('inp-c-nombre').value.trim(),
+      relationship:document.getElementById('inp-c-relacion').value.trim(),
+      phone:       document.getElementById('inp-c-telefono').value.trim(),
+      isPrimary:   document.getElementById('chk-c-principal').checked,
+    };
+    if (!datos.name || !datos.phone) { Toast.warn('Nombre y teléfono son obligatorios.'); return; }
+    try {
+      if (editandoContactoId) {
+        const upd = await Contactos.actualizar(editandoContactoId, datos);
+        contactos = contactos.map(c => c.id === editandoContactoId ? upd : c);
+        Toast.ok('Contacto actualizado.');
+      } else {
+        const nuevo = await Contactos.crear(datos);
+        contactos.push(nuevo);
+        Toast.ok('Contacto agregado. 📞');
+      }
+      pintarContactos();
+      cerrarFormContacto();
+    } catch (e) { Toast.err(e.message); }
+  }
+  function pedirEliminarContacto(id, nombre) {
+    idContactoEliminar = id;
+    document.getElementById('modal-nombre-contacto').textContent = nombre;
+    document.getElementById('modal-contacto').style.display = 'flex';
+  }
+  function cerrarModalContacto() {
+    idContactoEliminar = null;
+    document.getElementById('modal-contacto').style.display = 'none';
+  }
+  async function confirmarEliminarContacto() {
+    if (!idContactoEliminar) return;
+    try {
+      await Contactos.eliminar(idContactoEliminar);
+      contactos = contactos.filter(c => c.id !== idContactoEliminar);
+      pintarContactos();
+      Toast.ok('Contacto eliminado.');
+    } catch (e) { Toast.err(e.message); }
+    cerrarModalContacto();
+  }
+
+  function pedirReiniciarTutorial() {
+    document.getElementById('zona-reiniciar').innerHTML = `
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-rojo btn-sm" onclick="confirmarReiniciarTutorial()">Confirmar</button>
+        <button class="btn btn-borde btn-sm" onclick="cancelarReiniciarTutorial()">Cancelar</button>
+      </div>`;
+  }
+  function confirmarReiniciarTutorial() {
+    const p = Sesion.perfilCache();
+    if (p) localStorage.removeItem(`mr_tutorial_${p.id}`);
+    Toast.info('Tutorial reiniciado. Cierra sesión y vuelve a entrar.');
+    cancelarReiniciarTutorial();
+  }
+  function cancelarReiniciarTutorial() {
+    document.getElementById('zona-reiniciar').innerHTML =
+      `<button class="btn btn-azul btn-sm" onclick="pedirReiniciarTutorial()">Reiniciar</button>`;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="description" content="MediReminder — Sistema de recordatorio de medicamentos"/>
+  <title>MediReminder — Iniciar Sesión</title>
+  <link rel="stylesheet" href="estilos.css"/>
+</head>
+<body>
+<div id="toast-caja"></div>
+
+<main class="login-page" role="main">
+  <div class="login-grid">
+
+    <!-- ── Panel izquierdo: Marca ── -->
+    <section class="login-marca" aria-label="Acerca de MediReminder">
+      <div class="logo-fila">
+        <div class="logo-icon" aria-hidden="true">💊</div>
+        <span class="logo-text">MediReminder</span>
+      </div>
+      <h1 style="font-size:1.5rem;font-weight:900;margin-bottom:.75rem">Tu compañero de salud personal</h1>
+      <p style="color:var(--g500);margin-bottom:2rem;font-size:1rem">
+        Nunca más olvides tomar tus medicamentos. Mantén a tu familia informada y tu salud bajo control.
+      </p>
+      <div class="feat">
+        <div class="feat-icon" style="background:var(--verde-cl)">🛡️</div>
+        <div><p class="feat-title">Recordatorios Inteligentes</p><p class="feat-desc">Alertas visuales y sonoras adaptadas a adultos mayores</p></div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon" style="background:var(--morado-cl)">👨‍👩‍👧</div>
+        <div><p class="feat-title">Seguimiento Familiar</p><p class="feat-desc">Tus familiares pueden monitorear tu adherencia en tiempo real</p></div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon" style="background:var(--azul-cl)">👤</div>
+        <div><p class="feat-title">Uso Independiente</p><p class="feat-desc">También perfecto para uso personal sin supervisión</p></div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon" style="background:var(--naranja-cl)">📄</div>
+        <div><p class="feat-title">Reportes Médicos</p><p class="feat-desc">Exporta PDF, TXT o CSV para compartir con tu médico</p></div>
+      </div>
+      <div class="demo-sep">
+        <p>Acceso rápido de demostración:</p>
+        <div class="demo-btns">
+          <button class="btn" style="flex:1;background:var(--azul-cl);color:var(--azul-osc)" onclick="loginDemo('patient')">Demo Paciente</button>
+          <button class="btn" style="flex:1;background:var(--morado-cl);color:#5b21b6"       onclick="loginDemo('caregiver')">Demo Familiar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Panel derecho: Formulario ── -->
+    <section class="login-panel" aria-label="Formulario de acceso">
+      <div class="modo-selector" role="tablist">
+        <button id="btn-login"    class="modo-btn activo" onclick="cambiarModo('login')"    role="tab" aria-selected="true">🔑 Iniciar Sesión</button>
+        <button id="btn-registro" class="modo-btn"        onclick="cambiarModo('registro')" role="tab" aria-selected="false">✨ Registrarse</button>
+      </div>
+
+      <div id="error-login" class="aviso-error" style="display:none;margin-bottom:1rem" role="alert" aria-live="polite"></div>
+
+      <!-- Bloque solo registro -->
+      <div id="bloque-registro" style="display:none">
+        <div class="rol-selector" role="group" aria-label="Tipo de usuario">
+          <div id="rol-paciente" class="rol-btn act-pac" onclick="elegirRol('patient')" role="button" tabindex="0" aria-pressed="true">
+            <div class="rol-icon">🏥</div><div class="rol-name">Paciente</div>
+          </div>
+          <div id="rol-cuidador" class="rol-btn" onclick="elegirRol('caregiver')" role="button" tabindex="0" aria-pressed="false">
+            <div class="rol-icon">👨‍⚕️</div><div class="rol-name">Familiar/Cuidador</div>
+          </div>
+        </div>
+        <div class="campo-grupo" style="margin-bottom:.875rem">
+          <label class="campo-label" for="inp-nombre">Nombre Completo</label>
+          <input type="text" id="inp-nombre" class="campo-input" placeholder="Tu nombre completo" autocomplete="name"/>
+        </div>
+      </div>
+
+      <!-- Campos comunes -->
+      <div class="campo-grupo" style="margin-bottom:.875rem">
+        <label class="campo-label" for="inp-email">Correo Electrónico</label>
+        <input type="email" id="inp-email" class="campo-input" placeholder="tu@correo.com" autocomplete="email"/>
+      </div>
+      <div class="campo-grupo" style="margin-bottom:1rem">
+        <label class="campo-label" for="inp-password">Contraseña</label>
+        <input type="password" id="inp-password" class="campo-input" placeholder="Mínimo 6 caracteres" autocomplete="current-password" minlength="6"/>
+      </div>
+
+      <!-- Modo independiente (solo paciente en registro) -->
+      <div id="bloque-independiente" style="display:none;margin-bottom:1rem">
+        <div style="background:var(--azul-cl);border:1px solid #bfdbfe;border-radius:var(--r-sm);padding:1rem">
+          <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer">
+            <input type="checkbox" id="chk-independiente" style="width:18px;height:18px;margin-top:3px;accent-color:var(--azul)"/>
+            <div>
+              <p style="font-weight:800;color:#1e40af">Modo Independiente</p>
+              <p style="font-size:.82rem;color:#3b82f6;margin-top:.15rem">Activa esto si NO necesitas supervisión de familiares. Solo recibirás recordatorios personales.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <button id="btn-enviar" class="btn btn-azul w100 btn-lg" onclick="enviar()" style="margin-bottom:1rem">
+        <span id="btn-texto">Iniciar Sesión</span>
+      </button>
+
+      <p id="p-registro" style="text-align:center;font-size:.875rem;color:var(--g500)">
+        ¿No tienes cuenta?
+        <button onclick="cambiarModo('registro')" style="color:var(--azul);font-weight:800;text-decoration:underline;font-size:.875rem">Regístrate aquí</button>
+      </p>
+
+      <div class="demo-sep">
+        <p>Acceso rápido de demostración:</p>
+        <div class="demo-btns">
+          <button class="btn btn-sm" style="flex:1;background:var(--azul-cl);color:var(--azul-osc)" onclick="loginDemo('patient')">Demo Paciente</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--morado-cl);color:#5b21b6" onclick="loginDemo('caregiver')">Demo Familiar</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-cliente.js"></script>
+<script>
+  // Redirigir si ya hay sesión
+  (async () => {
+    const u = await Sesion.usuario();
+    if (u) {
+      const p = Sesion.perfilCache();
+      window.location.href = p?.role === 'caregiver' ? '/monitoreo.html' : '/recordatorios.html';
+    }
+  })();
+
+  let modo = 'login';
+  let rol  = 'patient';
+
+  function cambiarModo(m) {
+    modo = m;
+    document.getElementById('bloque-registro').style.display = m === 'registro' ? 'block' : 'none';
+    document.getElementById('p-registro').style.display      = m === 'login'    ? 'block' : 'none';
+    document.getElementById('btn-login').className    = `modo-btn${m==='login'?'    activo':''}`;
+    document.getElementById('btn-registro').className = `modo-btn${m==='registro'?' activo':''}`;
+    document.getElementById('btn-login').setAttribute('aria-selected', m === 'login');
+    document.getElementById('btn-registro').setAttribute('aria-selected', m === 'registro');
+    document.getElementById('btn-texto').textContent = m === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta';
+    ocultarError(); actualizarIndependiente();
+  }
+
+  function elegirRol(r) {
+    rol = r;
+    document.getElementById('rol-paciente').className = `rol-btn${r==='patient'?' act-pac':''}`;
+    document.getElementById('rol-cuidador').className = `rol-btn${r==='caregiver'?' act-cui':''}`;
+    document.getElementById('rol-paciente').setAttribute('aria-pressed', r === 'patient');
+    document.getElementById('rol-cuidador').setAttribute('aria-pressed', r === 'caregiver');
+    actualizarIndependiente();
+  }
+
+  function actualizarIndependiente() {
+    document.getElementById('bloque-independiente').style.display =
+      modo === 'registro' && rol === 'patient' ? 'block' : 'none';
+  }
+
+  function mostrarError(msg) {
+    const el = document.getElementById('error-login');
+    el.textContent = msg; el.style.display = 'block';
+  }
+  function ocultarError() { document.getElementById('error-login').style.display = 'none'; }
+
+  async function enviar() {
+    ocultarError();
+    const email    = document.getElementById('inp-email').value.trim();
+    const password = document.getElementById('inp-password').value;
+    if (!email || !password) { mostrarError('Por favor completa todos los campos.'); return; }
+
+    const btn = document.getElementById('btn-enviar');
+    btn.disabled = true;
+    document.getElementById('btn-texto').textContent = 'Procesando...';
+
+    try {
+      let perfil;
+      if (modo === 'registro') {
+        const nombre = document.getElementById('inp-nombre').value.trim();
+        if (!nombre) { mostrarError('El nombre es requerido.'); return; }
+        const independiente = document.getElementById('chk-independiente')?.checked || false;
+        perfil = await Auth.registro({ name: nombre, email, password, role: rol, independentMode: independiente });
+      } else {
+        perfil = await Auth.login({ email, password });
+      }
+      window.location.href = perfil.role === 'caregiver' ? '/monitoreo.html' : '/recordatorios.html';
+    } catch (err) {
+      mostrarError(err.message || 'Error al conectar. Intenta de nuevo.');
+    } finally {
+      btn.disabled = false;
+      document.getElementById('btn-texto').textContent = modo === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta';
+    }
+  }
+
+  async function loginDemo(r) {
+    ocultarError();
+    try {
+      const perfil = await Auth.loginDemo(r);
+      window.location.href = perfil.role === 'caregiver' ? '/monitoreo.html' : '/recordatorios.html';
+    } catch (err) { mostrarError(err.message); }
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') enviar(); });
+</script>
+</body>
+</html>

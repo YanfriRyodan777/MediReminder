@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>MediReminder — Panel de Monitoreo</title>
+  <link rel="stylesheet" href="estilos.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div id="toast-caja"></div>
+<div id="nav-contenedor"></div>
+
+<main class="pagina" role="main">
+  <div class="espacio">
+
+    <div class="card">
+      <h1 style="font-size:1.5rem;font-weight:900">Panel de Monitoreo</h1>
+      <p style="color:var(--g500);margin-top:.25rem">Seguimiento de adherencia al tratamiento médico</p>
+    </div>
+
+    <!-- Alertas del día -->
+    <div id="alerta-omitidas" style="display:none;background:var(--rojo-cl);border-left:4px solid var(--rojo);border-radius:var(--r);padding:1rem 1.25rem;display:flex;gap:.75rem;align-items:flex-start" role="alert">
+      <span style="font-size:1.3rem;flex-shrink:0" aria-hidden="true">🚨</span>
+      <div><p style="font-weight:900;color:#b91c1c">Medicinas omitidas hoy</p>
+      <p id="txt-alerta-omitidas" style="color:#dc2626;font-size:.9rem;margin-top:.2rem"></p></div>
+    </div>
+    <div id="alerta-pendientes" style="display:none;background:var(--amarillo-cl);border-left:4px solid var(--amarillo);border-radius:var(--r);padding:1rem 1.25rem;display:flex;gap:.75rem;align-items:flex-start" role="alert">
+      <span style="font-size:1.3rem;flex-shrink:0" aria-hidden="true">⏳</span>
+      <div><p style="font-weight:900;color:#92400e">Medicinas pendientes</p>
+      <p id="txt-alerta-pendientes" style="color:#b45309;font-size:.9rem;margin-top:.2rem"></p></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card azul">  <div class="stat-label">Adherencia Hoy</div>   <div class="stat-val" id="s-adh-hoy">—</div>  <div class="stat-sub" id="s-sub-hoy">0 de 0</div></div>
+      <div class="stat-card verde"> <div class="stat-label">Tomadas Hoy</div>       <div class="stat-val" id="s-tomadas">0</div>   <div class="stat-sub">Completadas ✓</div></div>
+      <div class="stat-card rojo">  <div class="stat-label">Omitidas Hoy</div>      <div class="stat-val" id="s-omitidas">0</div>  <div class="stat-sub">No tomadas</div></div>
+      <div class="stat-card morado"><div class="stat-label">Adherencia Semanal</div><div class="stat-val" id="s-semanal">—</div>   <div class="stat-sub">Últimos 7 días</div></div>
+    </div>
+
+    <!-- Pestañas -->
+    <div class="tabs" role="tablist">
+      <button class="tab activa" id="tab-lista"      onclick="cambiarTab('lista')"      role="tab" aria-selected="true">📋 Historial</button>
+      <button class="tab"        id="tab-calendario" onclick="cambiarTab('calendario')" role="tab" aria-selected="false">📅 Calendario</button>
+      <button class="tab"        id="tab-graficas"   onclick="cambiarTab('graficas')"   role="tab" aria-selected="false">📊 Gráficas</button>
+    </div>
+
+    <!-- ── VISTA HISTORIAL ────────────────────────────── -->
+    <div id="vista-lista" class="espacio">
+      <div class="card">
+        <div class="sec-header">
+          <h2 class="sec-titulo">📈 Historial de Adherencia</h2>
+          <select id="sel-dias" class="campo-input" style="width:auto" onchange="renderizarHistorial()" aria-label="Período de tiempo">
+            <option value="7">Últimos 7 días</option>
+            <option value="14">Últimos 14 días</option>
+            <option value="30" selected>Últimos 30 días</option>
+          </select>
+        </div>
+        <div id="cargando-hist" class="cargando"><div class="spinner"></div><p>Cargando historial...</p></div>
+        <div id="historial-dias" class="espacio"></div>
+      </div>
+
+      <!-- Detalle día seleccionado -->
+      <div id="card-detalle" class="card" style="display:none">
+        <h2 class="sec-titulo" id="titulo-detalle">📅 Detalle del día</h2>
+        <div id="detalle-registros" class="espacio" style="margin-top:.875rem"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem" class="grid-2col">
+
+        <!-- Medicamentos activos -->
+        <div class="card">
+          <h2 class="sec-titulo" style="margin-bottom:.875rem">💊 Medicamentos Activos</h2>
+          <div id="lista-meds-activos" class="espacio"></div>
+        </div>
+
+        <!-- Exportar -->
+        <div class="card">
+          <h2 class="sec-titulo" style="margin-bottom:.5rem">📄 Exportar Reportes</h2>
+          <p style="font-size:.85rem;color:var(--g500);margin-bottom:1rem">Descarga registros para compartir con tu médico.</p>
+          <div class="espacio">
+            <div class="fila2">
+              <button class="btn btn-gris btn-sm" onclick="exportarTxt(7)">📄 7 días (TXT)</button>
+              <button class="btn btn-sm" style="background:var(--rojo-cl);color:#b91c1c;font-weight:800" onclick="exportarPdf(7)">📕 7 días (PDF)</button>
+            </div>
+            <div class="fila2">
+              <button class="btn btn-gris btn-sm" onclick="exportarTxt(14)">📄 14 días (TXT)</button>
+              <button class="btn btn-sm" style="background:var(--rojo-cl);color:#b91c1c;font-weight:800" onclick="exportarPdf(14)">📕 14 días (PDF)</button>
+            </div>
+            <div class="fila2">
+              <button class="btn btn-gris btn-sm" onclick="exportarTxt(30)">📄 30 días (TXT)</button>
+              <button class="btn btn-sm" style="background:var(--rojo-cl);color:#b91c1c;font-weight:800" onclick="exportarPdf(30)">📕 30 días (PDF)</button>
+            </div>
+            <button class="btn btn-verde btn-sm w100" onclick="exportarCsv()">📊 Exportar todo (CSV)</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── VISTA CALENDARIO ───────────────────────────── -->
+    <div id="vista-calendario" class="espacio" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem">
+          <h2 class="sec-titulo">📅 Calendario de Adherencia</h2>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <button class="btn btn-gris btn-sm" onclick="cambiarMes(-1)" aria-label="Mes anterior">◀</button>
+            <button class="btn btn-azul btn-sm" onclick="irHoy()">Hoy</button>
+            <button class="btn btn-gris btn-sm" onclick="cambiarMes(1)"  aria-label="Mes siguiente">▶</button>
+          </div>
+        </div>
+        <h3 id="mes-titulo" style="text-align:center;font-size:1.5rem;font-weight:900;text-transform:capitalize;margin-bottom:1rem"></h3>
+        <div class="cal-grid" id="grilla-cal" role="grid" aria-label="Calendario de adherencia"></div>
+        <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--g200)">
+          <p style="font-size:.8rem;font-weight:800;color:var(--g600);margin-bottom:.75rem">Leyenda de colores:</p>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem">
+            <div style="display:flex;align-items:center;gap:.5rem"><div style="width:20px;height:20px;border-radius:4px;background:#dcfce7;border:2px solid #86efac"></div><span style="font-size:.78rem">90-100% Excelente</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><div style="width:20px;height:20px;border-radius:4px;background:#fef9c3;border:2px solid #fde047"></div><span style="font-size:.78rem">70-89% Bueno</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><div style="width:20px;height:20px;border-radius:4px;background:#ffedd5;border:2px solid #fdba74"></div><span style="font-size:.78rem">50-69% Regular</span></div>
+            <div style="display:flex;align-items:center;gap:.5rem"><div style="width:20px;height:20px;border-radius:4px;background:#fee2e2;border:2px solid #fca5a5"></div><span style="font-size:.78rem">&lt;50% Crítico</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VISTA GRÁFICAS ─────────────────────────────── -->
+    <div id="vista-graficas" class="espacio" style="display:none">
+      <div class="card">
+        <h3 style="font-weight:900;margin-bottom:1.25rem">📈 Tendencia de Adherencia (30 días)</h3>
+        <div style="position:relative;width:100%;overflow-x:auto"><canvas id="graf-linea" height="280"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 style="font-weight:900;margin-bottom:1.25rem">📊 Tomadas vs Omitidas por Día</h3>
+        <div style="position:relative;width:100%;overflow-x:auto"><canvas id="graf-barras" height="280"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 style="font-weight:900;margin-bottom:1.25rem">🥧 Distribución General (30 días)</h3>
+        <div style="max-width:320px;margin:0 auto"><canvas id="graf-pastel" height="280"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<style>
+  @media(max-width:768px){ .grid-2col{ grid-template-columns:1fr !important; } }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-cliente.js"></script>
+<script src="navegacion.js"></script>
+<script src="tutorial.js"></script>
+<script>
+  let logs = [], meds = [];
+  let fechaCal = new Date();
+  let grafLinea, grafBarras, grafPastel;
+
+  (async () => {
+    if (!await Sesion.requiereAuth()) return;
+    await inyectarNavegacion('monitoreo');
+    mostrarTutorial();
+    await cargarDatos();
+  })();
+
+  async function cargarDatos() {
+    try {
+      [logs, meds] = await Promise.all([
+        Registros.obtenerTodos({ days: 30 }),
+        Medicamentos.obtenerTodos(),
+      ]);
+      actualizarStats();
+      renderizarHistorial();
+      renderizarMedsActivos();
+      renderizarCalendario();
+      renderizarGraficas();
+    } catch (e) { Toast.err(e.message); }
+    finally { document.getElementById('cargando-hist').style.display = 'none'; }
+  }
+
+  // ── Stats ────────────────────────────────────────────────
+  function actualizarStats() {
+    const hoy = Fecha.hoy();
+    const deHoy = logs.filter(l => l.date === hoy);
+    const tom = deHoy.filter(l => l.status === 'taken').length;
+    const omi = deHoy.filter(l => l.status === 'missed').length;
+    const pen = deHoy.filter(l => l.status === 'pending').length;
+    const tot = deHoy.length;
+    const adh = tot > 0 ? Math.round((tom / tot) * 100) : null;
+
+    const hace7 = new Date(); hace7.setDate(hace7.getDate() - 7);
+    const sem = logs.filter(l => l.date >= hace7.toISOString().split('T')[0] && l.status !== 'pending');
+    const adhSem = sem.length > 0 ? Math.round(sem.filter(l => l.status === 'taken').length / sem.length * 100) : null;
+
+    document.getElementById('s-adh-hoy').textContent  = adh !== null ? adh + '%' : '—';
+    document.getElementById('s-sub-hoy').textContent  = `${tom} de ${tot}`;
+    document.getElementById('s-tomadas').textContent  = tom;
+    document.getElementById('s-omitidas').textContent = omi;
+    document.getElementById('s-semanal').textContent  = adhSem !== null ? adhSem + '%' : '—';
+
+    const aO = document.getElementById('alerta-omitidas');
+    const aP = document.getElementById('alerta-pendientes');
+    if (omi > 0) { aO.style.display = 'flex'; document.getElementById('txt-alerta-omitidas').textContent = `Se omitieron ${omi} medicina(s) hoy.`; }
+    if (pen > 0) { aP.style.display = 'flex'; document.getElementById('txt-alerta-pendientes').textContent = `Quedan ${pen} medicina(s) pendiente(s) hoy.`; }
+  }
+
+  // ── Historial ────────────────────────────────────────────
+  function renderizarHistorial() {
+    const dias = parseInt(document.getElementById('sel-dias').value);
+    const hoy  = Fecha.hoy();
+    const cont = document.getElementById('historial-dias');
+    cont.innerHTML = '';
+    for (let i = 0; i < dias; i++) {
+      const f = new Date(); f.setDate(f.getDate() - i);
+      const fStr = f.toISOString().split('T')[0];
+      const del = logs.filter(l => l.date === fStr);
+      const tom = del.filter(l => l.status === 'taken').length;
+      const omi = del.filter(l => l.status === 'missed').length;
+      const pen = del.filter(l => l.status === 'pending').length;
+      const tot = del.length;
+      const adh = tot > 0 ? Math.round((tom / tot) * 100) : 0;
+      const color = adh >= 80 ? 'var(--verde)' : adh >= 50 ? 'var(--amarillo)' : 'var(--rojo)';
+      const esHoy = fStr === hoy;
+      const div = document.createElement('div');
+      div.style.cssText = `background:var(--blanco);border:2px solid ${esHoy ? 'var(--azul)' : 'var(--g200)'};border-radius:var(--r);padding:.875rem 1rem;cursor:pointer`;
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div>
+            <p style="font-weight:800;font-size:.95rem">${Fecha.larga(fStr)}</p>
+            ${esHoy ? '<span class="badge b-azul">Hoy</span>' : ''}
+          </div>
+          <p style="font-size:1.6rem;font-weight:900;color:${color}">${adh}%</p>
+        </div>
+        <div class="barra">
+          <div class="barra-verde"    style="width:${tot>0?(tom/tot)*100:0}%"></div>
+          <div class="barra-amarilla" style="width:${tot>0?(pen/tot)*100:0}%"></div>
+          <div class="barra-roja"     style="width:${tot>0?(omi/tot)*100:0}%"></div>
+        </div>
+        <div style="display:flex;gap:1rem;margin-top:.4rem;font-size:.8rem">
+          <span style="color:var(--verde);font-weight:700">✓ ${tom} tomadas</span>
+          <span style="color:var(--rojo);font-weight:700">✗ ${omi} omitidas</span>
+          ${pen > 0 ? `<span style="color:var(--amarillo);font-weight:700">⏳ ${pen} pendientes</span>` : ''}
+        </div>`;
+      div.onclick = () => mostrarDetalle(fStr);
+      cont.appendChild(div);
+    }
+  }
+
+  function mostrarDetalle(fStr) {
+    const del = logs.filter(l => l.date === fStr);
+    if (!del.length) return;
+    document.getElementById('titulo-detalle').textContent = '📅 ' + Fecha.larga(fStr);
+    document.getElementById('detalle-registros').innerHTML = del.map(l => {
+      const ico  = l.status === 'taken' ? '✅' : l.status === 'missed' ? '❌' : '⏳';
+      const cls  = l.status === 'taken' ? 'tomado' : l.status === 'missed' ? 'omitido' : 'pendiente';
+      return `<div class="log-item ${cls}">
+        <div class="log-icono ${cls}">${ico}</div>
+        <div class="log-info">
+          <p class="log-nombre">${l.medicineName}</p>
+          <p class="log-meta">Programada: ${l.scheduledTime}</p>
+        </div>
+        ${l.status==='taken'&&l.takenTime ? `<div class="log-derecha"><p style="font-size:.75rem;color:var(--g400)">Tomada</p><p style="font-weight:900;color:var(--verde)">${l.takenTime}</p></div>` : ''}
+      </div>`;
+    }).join('');
+    document.getElementById('card-detalle').style.display = 'block';
+    document.getElementById('card-detalle').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function renderizarMedsActivos() {
+    const activos = meds.filter(m => m.active);
+    document.getElementById('lista-meds-activos').innerHTML = activos.length
+      ? activos.map(m => `
+          <div style="border:1px solid var(--g200);border-radius:var(--r-sm);padding:.875rem">
+            <p style="font-weight:800">💊 ${m.name}</p>
+            <p style="font-size:.82rem;color:var(--g500)">Dosis: ${m.dosage}</p>
+            <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem">
+              ${(m.times||[]).map(t => `<span class="hora-chip">${t}</span>`).join('')}
+            </div>
+          </div>`).join('')
+      : '<p style="color:var(--g400);font-size:.85rem">No hay medicamentos activos.</p>';
+  }
+
+  // ── Calendario ───────────────────────────────────────────
+  function renderizarCalendario() {
+    const año = fechaCal.getFullYear(), mes = fechaCal.getMonth();
+    const hoy = Fecha.hoy();
+    document.getElementById('mes-titulo').textContent =
+      new Date(año, mes, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    const primer = new Date(año, mes, 1).getDay();
+    const total  = new Date(año, mes + 1, 0).getDate();
+    const dias   = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+    let html = dias.map(d => `<div class="cal-head" role="columnheader">${d}</div>`).join('');
+    for (let i = 0; i < primer; i++) html += '<div></div>';
+    for (let d = 1; d <= total; d++) {
+      const fStr = `${año}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const del  = logs.filter(l => l.date === fStr);
+      const tom  = del.filter(l => l.status === 'taken').length;
+      const tot  = del.length;
+      const adh  = tot > 0 ? Math.round((tom/tot)*100) : null;
+      const fut  = fStr > hoy;
+      let cls = 'cal-dia';
+      if (fStr === hoy)     cls += ' hoy';
+      else if (fut)         cls += ' futuro';
+      else if (adh !== null) {
+        if      (adh >= 90) cls += ' excelente';
+        else if (adh >= 70) cls += ' bueno';
+        else if (adh >= 50) cls += ' regular';
+        else                cls += ' critico';
+      }
+      html += `<div class="${cls}" role="gridcell" aria-label="${fStr}${adh!==null?' - '+adh+'%':''}"
+        ${!fut ? `onclick="mostrarDetalle('${fStr}')"` : ''} tabindex="${!fut?'0':'-1'}">
+        <span class="cal-num">${d}</span>
+        ${adh!==null&&!fut ? `<span class="cal-pct">${adh}%</span>` : ''}
+      </div>`;
+    }
+    document.getElementById('grilla-cal').innerHTML = html;
+  }
+
+  function cambiarMes(d) { fechaCal = new Date(fechaCal.getFullYear(), fechaCal.getMonth() + d, 1); renderizarCalendario(); }
+  function irHoy()        { fechaCal = new Date(); renderizarCalendario(); }
+
+  // ── Gráficas ─────────────────────────────────────────────
+  function renderizarGraficas() {
+    const etiq = [], tomV = [], omitV = [], adhV = [];
+    for (let i = 29; i >= 0; i--) {
+      const f = new Date(); f.setDate(f.getDate() - i);
+      const fStr = f.toISOString().split('T')[0];
+      const del  = logs.filter(l => l.date === fStr);
+      const tom  = del.filter(l => l.status === 'taken').length;
+      const omi  = del.filter(l => l.status === 'missed').length;
+      const tot  = del.filter(l => l.status !== 'pending').length;
+      etiq.push(Fecha.corta(fStr));
+      tomV.push(tom); omitV.push(omi);
+      adhV.push(tot > 0 ? Math.round((tom/tot)*100) : 0);
+    }
+    if (grafLinea)  grafLinea.destroy();
+    if (grafBarras) grafBarras.destroy();
+    if (grafPastel) grafPastel.destroy();
+
+    grafLinea = new Chart(document.getElementById('graf-linea'), {
+      type: 'line',
+      data: { labels: etiq, datasets: [{ label: 'Adherencia %', data: adhV, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)', tension: .3, fill: true, pointRadius: 3 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } } }
+    });
+    grafBarras = new Chart(document.getElementById('graf-barras'), {
+      type: 'bar',
+      data: { labels: etiq, datasets: [{ label: 'Tomadas', data: tomV, backgroundColor: '#22c55e' }, { label: 'Omitidas', data: omitV, backgroundColor: '#ef4444' }] },
+      options: { responsive: true, plugins: { legend: { position: 'top' } } }
+    });
+    const totTom = logs.filter(l => l.status === 'taken').length;
+    const totOmi = logs.filter(l => l.status === 'missed').length;
+    grafPastel = new Chart(document.getElementById('graf-pastel'), {
+      type: 'pie',
+      data: { labels: ['Tomadas', 'Omitidas'], datasets: [{ data: [totTom, totOmi], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 2 }] },
+      options: { responsive: true }
+    });
+  }
+
+  // ── Tabs ─────────────────────────────────────────────────
+  function cambiarTab(tab) {
+    ['lista','calendario','graficas'].forEach(t => {
+      document.getElementById(`vista-${t}`).style.display = t === tab ? 'flex' : 'none';
+      document.getElementById(`tab-${t}`).className = `tab${t === tab ? ' activa' : ''}`;
+      document.getElementById(`tab-${t}`).setAttribute('aria-selected', t === tab);
+    });
+    document.getElementById(`vista-${tab}`).style.flexDirection = 'column';
+  }
+
+  // ── Exportar TXT ─────────────────────────────────────────
+  function exportarTxt(dias) {
+    const perfil = Sesion.perfilCache();
+    const fin = Fecha.hoy();
+    const ini = new Date(); ini.setDate(ini.getDate() - dias);
+    const iniStr = ini.toISOString().split('T')[0];
+    const filtrados = logs.filter(l => l.date >= iniStr && l.date <= fin);
+    const tom = filtrados.filter(l => l.status === 'taken').length;
+    const omi = filtrados.filter(l => l.status === 'missed').length;
+    const tot = filtrados.filter(l => l.status !== 'pending').length;
+    const adh = tot > 0 ? Math.round((tom/tot)*100) : 0;
+
+    let txt = `REPORTE DE ADHERENCIA — MEDIREMINDER\n${'='.repeat(45)}\n\n`;
+    txt += `Paciente : ${perfil?.full_name || 'N/A'}\n`;
+    txt += `Período  : ${ini.toLocaleDateString('es-ES')} → ${new Date(fin+'T00:00:00').toLocaleDateString('es-ES')}\n`;
+    txt += `Generado : ${new Date().toLocaleString('es-ES')}\n\n`;
+    txt += `RESUMEN\n${'-'.repeat(30)}\n`;
+    txt += `Adherencia : ${adh}%\nTomadas : ${tom}\nOmitidas : ${omi}\nTotal : ${tot}\n\n`;
+    txt += `MEDICAMENTOS ACTIVOS\n${'-'.repeat(30)}\n`;
+    meds.filter(m => m.active).forEach((m,i) => {
+      txt += `${i+1}. ${m.name} — ${m.dosage}\n   Horarios: ${m.times.join(', ')}\n`;
+      if (m.instructions) txt += `   Instrucciones: ${m.instructions}\n`;
+    });
+    txt += `\nDETALLE DIARIO\n${'-'.repeat(30)}\n`;
+    const porFecha = {};
+    filtrados.forEach(l => { if (!porFecha[l.date]) porFecha[l.date] = []; porFecha[l.date].push(l); });
+    Object.keys(porFecha).sort().reverse().forEach(f => {
+      const dl = porFecha[f];
+      const dt = dl.filter(l => l.status === 'taken').length;
+      const dtot = dl.filter(l => l.status !== 'pending').length;
+      txt += `\n${Fecha.larga(f)} — ${dtot>0?Math.round((dt/dtot)*100):0}%\n`;
+      dl.forEach(l => {
+        const s = l.status === 'taken' ? '✓' : l.status === 'missed' ? '✗' : '○';
+        txt += `  ${s} ${l.scheduledTime} ${l.medicineName}${l.takenTime?' (tomada: '+l.takenTime+')':''}\n`;
+      });
+    });
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `reporte-${dias}dias-${fin}.txt`;
+    a.click();
+    Toast.ok(`Reporte TXT de ${dias} días descargado.`);
+  }
+
+  // ── Exportar CSV ─────────────────────────────────────────
+  function exportarCsv() {
+    let csv = 'Fecha,Hora Programada,Medicamento,Estado,Hora Tomada\n';
+    logs.forEach(l => { csv += `${l.date},${l.scheduledTime},"${l.medicineName}",${l.status},${l.takenTime||''}\n`; });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `historial-completo-${Fecha.hoy()}.csv`;
+    a.click();
+    Toast.ok('CSV descargado correctamente.');
+  }
+
+  // ── Exportar PDF ─────────────────────────────────────────
+  function exportarPdf(dias) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const perfil = Sesion.perfilCache();
+    const fin = Fecha.hoy();
+    const ini = new Date(); ini.setDate(ini.getDate() - dias);
+    const iniStr = ini.toISOString().split('T')[0];
+    const filtrados = logs.filter(l => l.date >= iniStr && l.date <= fin);
+    const tom = filtrados.filter(l => l.status === 'taken').length;
+    const omi = filtrados.filter(l => l.status === 'missed').length;
+    const tot = filtrados.filter(l => l.status !== 'pending').length;
+    const adh = tot > 0 ? Math.round((tom/tot)*100) : 0;
+
+    doc.setFontSize(20); doc.setFont('helvetica','bold');
+    doc.text('REPORTE DE ADHERENCIA', 105, 22, { align: 'center' });
+    doc.setFontSize(10); doc.setFont('helvetica','normal');
+    doc.text('MediReminder — Sistema de Recordatorio de Medicamentos', 105, 30, { align: 'center' });
+    doc.setDrawColor(59,130,246); doc.setLineWidth(.5); doc.line(20, 34, 190, 34);
+
+    doc.setFontSize(11);
+    doc.text(`Paciente  : ${perfil?.full_name || 'N/A'}`, 20, 44);
+    doc.text(`Período   : ${ini.toLocaleDateString('es-ES')} → ${new Date(fin+'T00:00:00').toLocaleDateString('es-ES')}`, 20, 51);
+    doc.text(`Generado  : ${new Date().toLocaleString('es-ES')}`, 20, 58);
+
+    doc.setFillColor(59,130,246); doc.rect(20, 66, 170, 38, 'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('RESUMEN GENERAL', 105, 76, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(`Adherencia: ${adh}%`, 35, 87); doc.text(`Tomadas: ${tom}`, 35, 95);
+    doc.text(`Omitidas: ${omi}`, 120, 87);  doc.text(`Total: ${tot}`, 120, 95);
+    doc.setTextColor(0,0,0);
+
+    let y = 118;
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('MEDICAMENTOS ACTIVOS', 20, y); y += 8;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    meds.filter(m => m.active).forEach((m,i) => {
+      doc.text(`${i+1}. ${m.name} — ${m.dosage}`, 25, y); y += 6;
+      doc.text(`   Horarios: ${m.times.join(', ')}`, 25, y); y += 8;
+      if (y > 260) { doc.addPage(); y = 20; }
+    });
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(8);
+    doc.setTextColor(150,150,150);
+    doc.text('Generado por MediReminder — Sistema de adherencia a medicamentos', 105, 288, { align: 'center' });
+    doc.save(`reporte-${dias}dias-${fin}.pdf`);
+    Toast.ok(`PDF de ${dias} días descargado.`);
+  }
+</script>
+</body>
+</html>
