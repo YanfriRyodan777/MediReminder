@@ -83,8 +83,8 @@ const Sesion = {
 //  AUTH
 // ══════════════════════════════════════════════════════════════
 const Auth = {
-  async registro({ name, email, password, role, independentMode }) {
-    const datos = await api('POST', '/api/auth/registro', { name, email, password, role, independentMode });
+  async registro({ name, email, password, role, independentMode, patientEmail }) {
+    const datos = await api('POST', '/api/auth/registro', { name, email, password, role, independentMode, patientEmail });
     Sesion.guardar(datos.token, datos.user);
     return datos.user;
   },

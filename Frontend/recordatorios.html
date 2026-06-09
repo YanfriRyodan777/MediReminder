@@ -212,24 +212,25 @@
     if (pend) mostrarAlerta(pend);
   }
 
+  let intervalAlarma = null;
+
   function mostrarAlerta(log) {
     logAlerta = log;
     document.getElementById('alerta-nombre').textContent = log.medicineName;
     document.getElementById('alerta-hora').textContent   = log.scheduledTime;
     document.getElementById('alerta').style.display = 'flex';
     if (sonidoActivo) {
-      // Intentar reproducir inmediatamente
       reproducirAlarma();
-      // Si el navegador bloqueó el audio, reproducir al primer click del usuario
-      const desbloquear = () => {
-        reproducirAlarma();
-        document.removeEventListener('click', desbloquear);
-      };
-      document.addEventListener('click', desbloquear, { once: true });
+      if (intervalAlarma) clearInterval(intervalAlarma);
+      intervalAlarma = setInterval(reproducirAlarma, 3000);
     }
   }
 
-  function ocultarAlerta() { logAlerta = null; document.getElementById('alerta').style.display = 'none'; }
+  function ocultarAlerta() {
+    logAlerta = null;
+    document.getElementById('alerta').style.display = 'none';
+    if (intervalAlarma) { clearInterval(intervalAlarma); intervalAlarma = null; }
+  }
 
   async function confirmarTomada() { if (logAlerta) { await accionTomada(logAlerta.id); ocultarAlerta(); } }
   async function confirmarOmitida(){ if (logAlerta) { await accionOmitida(logAlerta.id); ocultarAlerta(); } }

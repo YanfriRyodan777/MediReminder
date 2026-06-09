@@ -122,7 +122,7 @@ function fmtUsuario(u) {
 
 // POST /api/auth/registro
 app.post('/api/auth/registro', async (req, res) => {
-  const { name, email, password, role = 'patient', independentMode = false } = req.body;
+ const { name, email, password, role = 'patient', independentMode = false, patientEmail } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios' });
   if (password.length < 6)
@@ -141,10 +141,26 @@ app.post('/api/auth/registro', async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6)`,
       [id, name, email, hash, role, independentMode]
     );
-    await pool.query(
-      `INSERT INTO user_settings (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
+   await pool.query(
+      'INSERT INTO user_settings (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING',
       [id]
     );
+
+    // Si es cuidador y trae email del paciente, vincular automáticamente
+    if (role === 'caregiver' && patientEmail) {
+      const pac = await pool.query(
+        'SELECT id FROM profiles WHERE email=$1 AND role=$2',
+        [patientEmail.toLowerCase(), 'patient']
+      );
+      if (pac.rows.length) {
+        await pool.query(
+          `INSERT INTO patient_caregiver_relationships (patient_id, caregiver_id, status)
+           VALUES ($1,$2,'active') ON CONFLICT (patient_id, caregiver_id) DO NOTHING`,
+          [pac.rows[0].id, id]
+        );
+      }
+    }
+
     const { rows } = await pool.query(
       'SELECT id, full_name, email, role, independent_mode FROM profiles WHERE id = $1', [id]
     );
@@ -177,8 +193,25 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // GET /api/auth/perfil
-app.get('/api/auth/perfil', autenticar, (req, res) => {
-  res.json(fmtUsuario(req.usuario));
+
+app.get('/api/auth/perfil', autenticar, async (req, res) => {
+  try {
+    const u = fmtUsuario(req.usuario);
+    if (req.usuario.role === 'caregiver') {
+      const { rows } = await pool.query(
+        `SELECT p.id, p.full_name, p.email
+         FROM patient_caregiver_relationships r
+         JOIN profiles p ON p.id = r.patient_id
+         WHERE r.caregiver_id=$1 AND r.status='active'
+         LIMIT 1`,
+        [req.usuario.id]
+      );
+      u.patientLinked = rows[0] || null;
+    }
+    res.json(u);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ══════════════════════════════════════════════════════════

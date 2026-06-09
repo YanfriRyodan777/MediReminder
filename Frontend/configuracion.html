@@ -226,7 +226,17 @@
       </div>
       ${esPac ? `<div style="display:flex;justify-content:space-between;padding:.5rem 0">
         <span style="color:var(--g500)">Modo</span>
-        <span class="badge ${p.independent_mode?'b-verde':'b-amarillo'}">${p.independent_mode?'🧍 Independiente':'👥 Con Supervisión'}</span>
+        <span class="badge ${p.independentMode?'b-verde':'b-amarillo'}">${p.independentMode?'🧍 Independiente':'👥 Con Supervisión'}</span>
+      </div>` : ''}
+      ${!esPac && p.patientLinked ? `<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-top:1px solid var(--g100);margin-top:.25rem">
+        <span style="color:var(--g500)">Paciente monitoreado</span>
+        <div style="text-align:right">
+          <p style="font-weight:800;font-size:.9rem">${p.patientLinked.full_name}</p>
+          <p style="font-size:.78rem;color:var(--g400)">${p.patientLinked.email}</p>
+        </div>
+      </div>` : ''}
+      ${!esPac && !p.patientLinked ? `<div style="padding:.5rem 0;border-top:1px solid var(--g100);margin-top:.25rem">
+        <span style="color:var(--amarillo);font-size:.85rem">⚠️ Sin paciente vinculado</span>
       </div>` : ''}`;
   }
 
