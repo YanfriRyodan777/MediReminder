@@ -191,6 +191,40 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+// GET /api/paciente/datos — cuidador obtiene datos de su paciente vinculado
+app.get('/api/paciente/datos', autenticar, async (req, res) => {
+  try {
+    const rel = await pool.query(
+      `SELECT patient_id FROM patient_caregiver_relationships
+       WHERE caregiver_id=$1 AND status='active' LIMIT 1`,
+      [req.usuario.id]
+    );
+    if (!rel.rows.length) return res.status(404).json({ error: 'Sin paciente vinculado' });
+    const patientId = rel.rows[0].patient_id;
+
+    const [perfil, meds, logs] = await Promise.all([
+      pool.query('SELECT id, full_name, email, independent_mode FROM profiles WHERE id=$1', [patientId]),
+      pool.query(`SELECT id, name, dosage, schedule_times AS times, instructions, image_url AS "imageUrl", (status='active') AS active FROM medicines WHERE user_id=$1 AND status='active'`, [patientId]),
+      pool.query(`SELECT ml.id, ml.medicine_id AS "medicineId", m.name AS "medicineName",
+                  ml.scheduled_date::text AS date, LEFT(ml.scheduled_time::text,5) AS "scheduledTime",
+                  to_char(ml.taken_at AT TIME ZONE 'UTC','HH24:MI') AS "takenTime", ml.status
+                  FROM medicine_logs ml JOIN medicines m ON m.id=ml.medicine_id
+                  WHERE ml.user_id=$1 AND ml.scheduled_date >= CURRENT_DATE - INTERVAL '30 days'
+                  ORDER BY ml.scheduled_date DESC, ml.scheduled_time ASC`, [patientId])
+    ]);
+
+    res.json({
+      patient: perfil.rows[0],
+      medicines: meds.rows,
+      logs: logs.rows
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
 
 // GET /api/auth/perfil
 

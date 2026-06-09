@@ -230,3 +230,6 @@ const Pacientes = {
 buscar:   (email)     => api('GET', '/api/pacientes/buscar?email=${encodeURIComponent(email)}'),
   vincular: (patientId) => api('POST', '/api/pacientes/vincular', { patientId }),
 };
+const PacienteDatos = {
+  obtener: () => api('GET', '/api/paciente/datos'),
+};

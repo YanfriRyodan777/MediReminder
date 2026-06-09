@@ -18,6 +18,14 @@
     <div class="card">
       <h1 style="font-size:1.5rem;font-weight:900">Panel de Monitoreo</h1>
       <p style="color:var(--g500);margin-top:.25rem">Seguimiento de adherencia al tratamiento médico</p>
+      <div id="banner-paciente" style="display:none;margin-top:.75rem;background:var(--azul-cl);border-radius:var(--r-sm);padding:.75rem 1rem">
+        <p style="font-size:.85rem;color:var(--g500)">Monitoreando a:</p>
+        <p id="banner-paciente-nombre" style="font-weight:900;font-size:1rem"></p>
+        <p id="banner-paciente-email"  style="font-size:.8rem;color:var(--g500)"></p>
+      </div>
+      <div id="banner-sin-paciente" style="display:none;margin-top:.75rem;background:#fff7ed;border-radius:var(--r-sm);padding:.75rem 1rem">
+        <p style="color:#92400e;font-size:.85rem">⚠️ No tienes un paciente vinculado. Ve a <a href="/configuracion.html" style="color:var(--azul);font-weight:800">Configuración</a> para vincularte.</p>
+      </div>
     </div>
 
     <!-- Alertas del día -->
@@ -156,6 +164,7 @@
   let logs = [], meds = [];
   let fechaCal = new Date();
   let grafLinea, grafBarras, grafPastel;
+  let esCuidador = false;
 
   (async () => {
     if (!await Sesion.requiereAuth()) return;
@@ -166,10 +175,31 @@
 
   async function cargarDatos() {
     try {
-      [logs, meds] = await Promise.all([
-        Registros.obtenerTodos({ days: 30 }),
-        Medicamentos.obtenerTodos(),
-      ]);
+      const perfil = await Sesion.refrescarPerfil();
+      esCuidador = perfil?.role === 'caregiver';
+
+      if (esCuidador) {
+        try {
+          const datos = await PacienteDatos.obtener();
+          logs = datos.logs;
+          meds = datos.medicines;
+          // Mostrar banner del paciente
+          document.getElementById('banner-paciente').style.display = 'block';
+          document.getElementById('banner-paciente-nombre').textContent = datos.patient.full_name;
+          document.getElementById('banner-paciente-email').textContent  = datos.patient.email;
+        } catch {
+          // Sin paciente vinculado
+          document.getElementById('banner-sin-paciente').style.display = 'block';
+          logs = []; meds = [];
+        }
+      } else {
+        // Paciente normal o modo independiente
+        [logs, meds] = await Promise.all([
+          Registros.obtenerTodos({ days: 30 }),
+          Medicamentos.obtenerTodos(),
+        ]);
+      }
+
       actualizarStats();
       renderizarHistorial();
       renderizarMedsActivos();
