@@ -443,6 +443,33 @@ app.delete('/api/contactos/:id', autenticar, async (req, res) => {
     console.error(err.message);
     res.status(500).json({ error: 'Error al eliminar contacto' });
   }
+}); 
+// ── Vincular paciente (cuidador busca por email) ────────────
+app.get('/api/pacientes/buscar', autenticar, async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Email requerido' });
+  try {
+    const r = await pool.query(
+      'SELECT id, full_name, email FROM profiles WHERE email=$1 AND role=$2',
+      [email.toLowerCase(), 'patient']
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Paciente no encontrado' });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/pacientes/vincular', autenticar, async (req, res) => {
+  const { patientId } = req.body;
+  if (!patientId) return res.status(400).json({ error: 'patientId requerido' });
+  try {
+    await pool.query(
+      `INSERT INTO patient_caregiver_relationships (patient_id, caregiver_id, status)
+       VALUES ($1, $2, 'active') ON CONFLICT (patient_id, caregiver_id) DO NOTHING`,
+      [patientId, req.usuario.id]
+    );
+    const p = await pool.query('SELECT id, full_name, email FROM profiles WHERE id=$1', [patientId]);
+    res.json({ ok: true, patient: p.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ══════════════════════════════════════════════════════════

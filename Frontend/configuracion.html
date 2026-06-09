@@ -32,8 +32,20 @@
 
     <!-- ── Perfil ──────────────────────────────────────── -->
     <div class="card">
-      <h2 style="font-size:1rem;font-weight:900;margin-bottom:1rem">👤 Perfil de Usuario</h2>
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:1rem"> Perfil de Usuario</h2>
       <div id="panel-perfil"></div>
+    </div>
+
+
+<!-- ── Vincular Paciente (solo cuidadores) ───────── -->
+    <div id="sec-vincular" class="card" style="display:none">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.5rem">🔗 Vincular Paciente</h2>
+      <p style="font-size:.85rem;color:var(--g500);margin-bottom:.75rem">Ingresa el correo del paciente para vincularte</p>
+      <div style="display:flex;gap:.5rem">
+        <input type="email" id="inp-email-paciente" class="campo-input" placeholder="correo@ejemplo.com" style="flex:1"/>
+        <button class="btn btn-azul" onclick="buscarPaciente()">Buscar</button>
+      </div>
+      <div id="resultado-paciente" style="margin-top:.75rem"></div>
     </div>
 
     <!-- ── Notificaciones ─────────────────────────────── -->
@@ -196,8 +208,8 @@
     pintarContactos();
   }
 
-  function pintarPerfil() {
-    const p = Sesion.perfilCache();
+  async function pintarPerfil() {
+    const p = await Sesion.refrescarPerfil();
     if (!p) return;
     const esPac = p.role === 'patient';
     if (esPac) document.getElementById('panel-accesibilidad').style.display = 'block';
@@ -217,6 +229,35 @@
         <span class="badge ${p.independent_mode?'b-verde':'b-amarillo'}">${p.independent_mode?'🧍 Independiente':'👥 Con Supervisión'}</span>
       </div>` : ''}`;
   }
+
+  const secVincular = document.getElementById('sec-vincular');
+    if (secVincular) secVincular.style.display = p.role === 'caregiver' ? 'block' : 'none';
+
+async function buscarPaciente() {
+    const email = document.getElementById('inp-email-paciente')?.value.trim();
+    if (!email) return Toast.warn('Ingresa un correo');
+    try {
+      const p = await Pacientes.buscar(email);
+      document.getElementById('resultado-paciente').innerHTML = `
+        <div style="background:var(--azul-cl);border-radius:var(--r);padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <p style="font-weight:800">${p.full_name}</p>
+            <p style="font-size:.82rem;color:var(--g500)">${p.email}</p>
+          </div>
+          <button class="btn btn-verde" onclick="vincularPaciente('${p.id}')">Vincular ✅</button>
+        </div>`;
+    } catch (e) { Toast.err(e.message); }
+  }
+
+  async function vincularPaciente(id) {
+    try {
+      await Pacientes.vincular(id);
+      Toast.ok('¡Paciente vinculado correctamente!');
+      document.getElementById('resultado-paciente').innerHTML = '';
+      document.getElementById('inp-email-paciente').value = '';
+    } catch (e) { Toast.err(e.message); }
+  }
+
 
   function actualizarIconoVol(on) { document.getElementById('icono-vol').textContent = on ? '🔊' : '🔇'; }
   async function cambiarSonido(val) {
@@ -239,6 +280,7 @@
   }
   async function elegirTema(id) {
     localStorage.setItem('mr_tema', id);
+    aplicarTema(id);
     try { await Ajustes.guardar({ theme: id }); } catch { /* opcional */ }
     pintarTemas();
     Toast.ok('Tema aplicado.');

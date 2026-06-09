@@ -115,8 +115,14 @@
     mostrarTutorial();
     actualizarReloj(); setInterval(actualizarReloj, 30000);
     await cargar();
-    setInterval(verificarAlertas, 60000);
-  })();
+    setInterval(verificarAlertas, 30000);   // cada 30 seg en vez de 60
+    setInterval(async () => {               // recargar logs cada 5 min
+      try {
+        logs = await Registros.obtenerTodos({ days: 1 });
+        renderizar();
+      } catch { /* silencioso */ }
+    }, 300000);
+  })(); 
 
   function actualizarReloj() {
     const ahora = new Date();
@@ -211,7 +217,16 @@
     document.getElementById('alerta-nombre').textContent = log.medicineName;
     document.getElementById('alerta-hora').textContent   = log.scheduledTime;
     document.getElementById('alerta').style.display = 'flex';
-    if (sonidoActivo) reproducirAlarma();
+    if (sonidoActivo) {
+      // Intentar reproducir inmediatamente
+      reproducirAlarma();
+      // Si el navegador bloqueó el audio, reproducir al primer click del usuario
+      const desbloquear = () => {
+        reproducirAlarma();
+        document.removeEventListener('click', desbloquear);
+      };
+      document.addEventListener('click', desbloquear, { once: true });
+    }
   }
 
   function ocultarAlerta() { logAlerta = null; document.getElementById('alerta').style.display = 'none'; }

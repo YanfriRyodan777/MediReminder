@@ -61,6 +61,13 @@ const Sesion = {
     const p = localStorage.getItem('mr_perfil');
     return p ? JSON.parse(p) : null;
   },
+  async refrescarPerfil() {
+    try {
+      const datos = await api('GET', '/api/auth/perfil');
+      localStorage.setItem('mr_perfil', JSON.stringify(datos));
+      return datos;
+    } catch { return this.perfilCache(); }
+  },
   cerrar() {
     localStorage.removeItem('mr_token');
     localStorage.removeItem('mr_perfil');
@@ -194,3 +201,32 @@ function reproducirAlarma() {
     });
   } catch { /* navegador sin soporte audio */ }
 }
+
+// ══════════════════════════════════════════════════════════════
+//  TEMA DE COLOR
+// ══════════════════════════════════════════════════════════════
+function aplicarTema(id) {
+  const temas = {
+    blue:   { pri: '#3b82f6', osc: '#2563eb', cl: '#eff6ff' },
+    green:  { pri: '#22c55e', osc: '#16a34a', cl: '#f0fdf4' },
+    purple: { pri: '#8b5cf6', osc: '#7c3aed', cl: '#f5f3ff' },
+    orange: { pri: '#f97316', osc: '#ea580c', cl: '#fff7ed' },
+    rose:   { pri: '#ec4899', osc: '#db2777', cl: '#fdf2f8' },
+  };
+  const t = temas[id] || temas.blue;
+  document.documentElement.style.setProperty('--azul',     t.pri);
+  document.documentElement.style.setProperty('--azul-osc', t.osc);
+  document.documentElement.style.setProperty('--azul-cl',  t.cl);
+}
+(function() {
+  const tema = localStorage.getItem('mr_tema') || 'blue';
+  aplicarTema(tema);
+})();
+
+// ══════════════════════════════════════════════════════════════
+//  PACIENTES (para cuidadores)
+// ══════════════════════════════════════════════════════════════
+const Pacientes = {
+buscar:   (email)     => api('GET', '/api/pacientes/buscar?email=${encodeURIComponent(email)}'),
+  vincular: (patientId) => api('POST', '/api/pacientes/vincular', { patientId }),
+};
