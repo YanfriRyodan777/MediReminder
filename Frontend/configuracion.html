@@ -236,7 +236,10 @@
         </div>
       </div>` : ''}
       ${!esPac && !p.patientLinked ? `<div style="padding:.5rem 0;border-top:1px solid var(--g100);margin-top:.25rem">
-        <span style="color:var(--amarillo);font-size:.85rem"> Sin paciente vinculado</span>
+        <span style="color:var(--amarillo);font-size:.85rem">⚠️ Sin paciente vinculado</span>
+      </div>` : ''}
+      ${!esPac && p.patientLinked ? `<div style="padding:.5rem 0;border-top:1px solid var(--g100);margin-top:.5rem">
+        <button class="btn btn-rojo btn-sm" onclick="confirmarDesvincular()">🔓 Terminar ciclo y desvincular paciente</button>
       </div>` : ''}`;
 
 const secVincular = document.getElementById('sec-vincular');
@@ -404,9 +407,21 @@ async function buscarPaciente() {
     document.getElementById('zona-reiniciar').innerHTML =
       `<button class="btn btn-azul btn-sm" onclick="pedirReiniciarTutorial()">Reiniciar</button>`;
   }
+
+
+async function confirmarDesvincular() {
+    if (!confirm('¿Terminar ciclo? Esto borrará TODO el historial del paciente y desvinculará la cuenta. No se puede deshacer.')) return;
+    try {
+      await Pacientes.desvincular();
+      Toast.ok('Paciente desvinculado. Su cuenta quedó lista para reutilizar.');
+      setTimeout(() => pintarPerfil(), 1000);
+    } catch (e) { Toast.err(e.message); }
+  }
+
+
+
 </script>
 </body>
 </html>
 
 
-const secVincular

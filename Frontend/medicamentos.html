@@ -60,6 +60,11 @@
       <div class="campo-grupo" style="margin-bottom:.875rem">
         <label class="campo-label" for="inp-med-instruc">Instrucciones (opcional)</label>
         <textarea id="inp-med-instruc" class="campo-input" rows="2" placeholder="ej. Tomar con alimentos, evitar sol..."></textarea>
+        <div class="campo-grupo" style="margin-top:.75rem">
+          <label class="campo-label" for="inp-med-fecha">Fecha de inicio (opcional)</label>
+          <input type="date" id="inp-med-fecha" class="campo-input"/>
+          <p style="font-size:.78rem;color:var(--g500);margin-top:.3rem">Deja vacío para iniciar hoy. Puedes programar para mañana o cualquier fecha futura.</p>
+        </div>
       </div>
 
       <!-- Foto del medicamento -->
@@ -176,6 +181,7 @@
     document.getElementById('inp-med-nombre').value = '';
     document.getElementById('inp-med-dosis').value  = '';
     document.getElementById('inp-med-instruc').value = '';
+    document.getElementById('inp-med-fecha').value = '';
     document.getElementById('chk-activo').checked = true;
     quitarFoto();
     renderizarHorarios();
@@ -232,6 +238,7 @@
     if (!nombre || !dosis)   { Toast.warn('Nombre y dosis son obligatorios.'); return; }
     if (!tiempos.length)     { Toast.warn('Agrega al menos un horario.'); return; }
 
+    const fechaInicio = document.getElementById('inp-med-fecha').value;
     const datos = {
       name:         nombre,
       dosage:       dosis,
@@ -239,6 +246,7 @@
       instructions: document.getElementById('inp-med-instruc').value.trim() || null,
       active:       document.getElementById('chk-activo').checked,
       imageUrl:     fotoBase64 || null,
+      startDate:    fechaInicio || null,
     };
 
     try {

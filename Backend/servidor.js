@@ -274,19 +274,30 @@ app.get('/api/medicamentos', autenticar, async (req, res) => {
 
 // POST /api/medicamentos
 app.post('/api/medicamentos', autenticar, async (req, res) => {
-  const { name, dosage, times = [], instructions, imageUrl, active = true } = req.body;
+  const { name, dosage, times = [], instructions, imageUrl, active = true, startDate } = req.body;
   if (!name || !dosage)  return res.status(400).json({ error: 'Nombre y dosis son obligatorios' });
   if (!times.length)     return res.status(400).json({ error: 'Se requiere al menos un horario' });
+
+  // Si es cuidador, insertar la medicina para su paciente vinculado
+  let targetUserId = req.usuario.id;
+  if (req.usuario.role === 'caregiver') {
+    const rel = await pool.query(
+      `SELECT patient_id FROM patient_caregiver_relationships WHERE caregiver_id=$1 AND status='active' LIMIT 1`,
+      [req.usuario.id]
+    );
+    if (rel.rows.length) targetUserId = rel.rows[0].patient_id;
+  }
+
   try {
     const { rows } = await pool.query(
-      `INSERT INTO medicines (user_id, name, dosage, schedule_times, instructions, image_url, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+      `INSERT INTO medicines (user_id, name, dosage, schedule_times, instructions, image_url, status, start_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        RETURNING id, name, dosage,
                  schedule_times AS times, instructions,
                  image_url AS "imageUrl",
                  (status='active') AS active`,
-      [req.usuario.id, name, dosage, times, instructions || null,
-       imageUrl || null, active ? 'active' : 'inactive']
+      [targetUserId, name, dosage, times, instructions || null,
+       imageUrl || null, active ? 'active' : 'inactive', startDate || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -526,6 +537,7 @@ app.get('/api/pacientes/buscar', autenticar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+
 app.post('/api/pacientes/vincular', autenticar, async (req, res) => {
   const { patientId } = req.body;
   if (!patientId) return res.status(400).json({ error: 'patientId requerido' });
@@ -537,6 +549,32 @@ app.post('/api/pacientes/vincular', autenticar, async (req, res) => {
     );
     const p = await pool.query('SELECT id, full_name, email FROM profiles WHERE id=$1', [patientId]);
     res.json({ ok: true, patient: p.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// DELETE /api/pacientes/desvincular — cuidador desvincula y limpia historial
+app.delete('/api/pacientes/desvincular', autenticar, async (req, res) => {
+  try {
+    const rel = await pool.query(
+      `SELECT patient_id FROM patient_caregiver_relationships WHERE caregiver_id=$1 AND status='active' LIMIT 1`,
+      [req.usuario.id]
+    );
+    if (!rel.rows.length) return res.status(404).json({ error: 'Sin paciente vinculado' });
+    const patientId = rel.rows[0].patient_id;
+
+    // Eliminar historial del paciente
+    await pool.query(`DELETE FROM medicine_logs WHERE user_id=$1`, [patientId]);
+    await pool.query(`DELETE FROM medicines WHERE user_id=$1`, [patientId]);
+    await pool.query(`DELETE FROM emergency_contacts WHERE user_id=$1`, [patientId]);
+    await pool.query(`DELETE FROM user_settings WHERE user_id=$1`, [patientId]);
+    await pool.query(`INSERT INTO user_settings (user_id) VALUES ($1)`, [patientId]);
+    // Desvincular relación
+    await pool.query(
+      `DELETE FROM patient_caregiver_relationships WHERE caregiver_id=$1` ,
+      [req.usuario.id]
+    );
+    res.json({ ok: true, mensaje: 'Paciente desvinculado y cuenta reseteada' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -595,8 +633,9 @@ async function generarRegistrosHoy(userId) {
   const hoy = new Date().toISOString().split('T')[0];
   const { rows: meds } = await pool.query(
     `SELECT id, schedule_times FROM medicines
-     WHERE user_id=$1 AND status='active'`,
-    [userId]
+     WHERE user_id=$1 AND status='active'
+       AND (start_date IS NULL OR start_date <= $2)`,
+    [userId, hoy]
   );
   for (const med of meds) {
     for (const hora of med.schedule_times) {
@@ -655,3 +694,5 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
+

@@ -172,7 +172,7 @@
             </div>
             <div class="pend-hora-box">
               <p class="pend-hora-label">Hora</p>
-              <p class="pend-hora-val">${log.scheduledTime}</p>
+              <p class="pend-hora-val">${(() => { const [h,m] = log.scheduledTime.split(':'); const d = new Date(); d.setHours(+h,+m); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); })()}</p>
             </div>
           </div>
           <div class="pend-acciones">

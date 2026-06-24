@@ -227,8 +227,9 @@ function aplicarTema(id) {
 //  PACIENTES (para cuidadores)
 // ══════════════════════════════════════════════════════════════
 const Pacientes = {
-buscar:   (email)     => api('GET', '/api/pacientes/buscar?email=${encodeURIComponent(email)}'),
-  vincular: (patientId) => api('POST', '/api/pacientes/vincular', { patientId }),
+  buscar:      (email)     => api('GET',    `/api/pacientes/buscar?email=${encodeURIComponent(email)}`),
+  vincular:    (patientId) => api('POST',   '/api/pacientes/vincular', { patientId }),
+  desvincular: ()          => api('DELETE', '/api/pacientes/desvincular'),
 };
 const PacienteDatos = {
   obtener: () => api('GET', '/api/paciente/datos'),
