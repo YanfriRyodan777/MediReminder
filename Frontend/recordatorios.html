@@ -127,7 +127,7 @@
   function actualizarReloj() {
     const ahora = new Date();
     document.getElementById('fecha-hoy').textContent = ahora.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    document.getElementById('hora-actual').textContent = ahora.toTimeString().slice(0, 5);
+    document.getElementById('hora-actual').textContent = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   async function cargar() {
@@ -203,9 +203,10 @@
 
   function verificarAlertas() {
     if (logAlerta) return;
-    const hoy  = Fecha.hoy();
-    const hora = Fecha.hora();
-    const pend = logs.find(l =>
+    const ahora = new Date();
+    const hoy   = ahora.toISOString().split('T')[0];
+    const hora  = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const pend  = logs.find(l =>
       l.status === 'pending' && l.date === hoy &&
       l.scheduledTime <= hora && !pospuestos.has(l.id)
     );
@@ -246,7 +247,8 @@
       const log = logs.find(l => l.id === id);
       if (log && log.status === 'pending') mostrarAlerta(log);
     }, min * 60000));
-    Toast.info(`Recordatorio pospuesto ${min} minutos`);
+    const nuevaHora = new Date(Date.now() + min * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    Toast.info(`Pospuesto — nueva hora: ${nuevaHora}`);
   }
 
   async function accionTomada(id) {

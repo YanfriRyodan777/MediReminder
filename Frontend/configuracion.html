@@ -236,12 +236,16 @@
         </div>
       </div>` : ''}
       ${!esPac && !p.patientLinked ? `<div style="padding:.5rem 0;border-top:1px solid var(--g100);margin-top:.25rem">
-        <span style="color:var(--amarillo);font-size:.85rem">⚠️ Sin paciente vinculado</span>
+        <span style="color:var(--amarillo);font-size:.85rem"> Sin paciente vinculado</span>
       </div>` : ''}`;
+
+const secVincular = document.getElementById('sec-vincular');
+    if (secVincular) secVincular.style.display = !esPac ? 'block' : 'none';
+
+
   }
 
-  const secVincular = document.getElementById('sec-vincular');
-    if (secVincular) secVincular.style.display = p.role === 'caregiver' ? 'block' : 'none';
+  
 
 async function buscarPaciente() {
     const email = document.getElementById('inp-email-paciente')?.value.trim();
@@ -403,3 +407,6 @@ async function buscarPaciente() {
 </script>
 </body>
 </html>
+
+
+const secVincular

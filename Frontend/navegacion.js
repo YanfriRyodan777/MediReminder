@@ -1,9 +1,37 @@
 /* navegacion.js — MediReminder */
 
-async function inyectarNavegacion(paginaActual) {
+let _alarmaGlobalInterval = null;
+
+async function iniciarAlarmaGlobal() {
+  const token = Sesion.obtenerToken();
+  if (!token) return;
   const perfil = Sesion.perfilCache();
+  if (!perfil || perfil.role === 'caregiver') return;
+
+  async function verificar() {
+    try {
+      const ajustes = await Ajustes.obtener();
+      if (!ajustes.soundEnabled) return;
+      const logs = await Registros.obtenerTodos({ days: 1 });
+      const ahora = new Date();
+      const hoy   = ahora.toISOString().split('T')[0];
+      const hora  = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const pendiente = logs.find(l =>
+        l.status === 'pending' && l.date === hoy && l.scheduledTime <= hora
+      );
+      if (pendiente) reproducirAlarma();
+    } catch { /* silencioso */ }
+  }
+
+  verificar();
+  _alarmaGlobalInterval = setInterval(verificar, 60000);
+}
+
+async function inyectarNavegacion(paginaActual) {
+  const perfil = await Sesion.refrescarPerfil();
   if (!perfil) return;
 
+  const nombre   = perfil.full_name || perfil.name || '—';
   const esPaciente = perfil.role === 'patient';
 
   const enlacesPac = `
@@ -13,7 +41,7 @@ async function inyectarNavegacion(paginaActual) {
     <a href="/medicamentos.html" class="nav-link ${paginaActual==='medicamentos'?'ativo':''}" aria-label="Administrar">
       ⏰ <span class="nav-etiq">Administrar</span>
     </a>
-    ${!perfil.independent_mode ? `
+    ${!perfil.independentMode ? `
     <a href="/monitoreo.html" class="nav-link ${paginaActual==='monitoreo'?'ativo':''}" aria-label="Reportes">
       📊 <span class="nav-etiq">Reportes</span>
     </a>` : ''}`;
@@ -33,7 +61,7 @@ async function inyectarNavegacion(paginaActual) {
           <div class="brand-icon" aria-hidden="true">💊</div>
           <div>
             <div class="brand-name">MediReminder</div>
-            <div class="brand-user">${perfil.full_name}</div>
+            <div class="brand-user">${nombre}</div>
           </div>
         </div>
         <div class="navbar-links">
@@ -43,10 +71,15 @@ async function inyectarNavegacion(paginaActual) {
         </div>
       </div>
     </nav>`;
+
+  if (paginaActual !== 'recordatorios') {
+    iniciarAlarmaGlobal();
+  }
 }
 
 function cerrarSesion() {
   if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+    if (_alarmaGlobalInterval) clearInterval(_alarmaGlobalInterval);
     Sesion.cerrar();
   }
 }
