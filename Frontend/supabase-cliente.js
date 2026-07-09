@@ -221,6 +221,9 @@ function aplicarTema(id) {
 (function() {
   const tema = localStorage.getItem('mr_tema') || 'blue';
   aplicarTema(tema);
+  if (localStorage.getItem('mr_oscuro') === '1') {
+    document.body.classList.add('oscuro');
+  }
 })();
 
 // ══════════════════════════════════════════════════════════════

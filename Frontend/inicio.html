@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <meta name="description" content="MediReminder — Sistema de recordatorio de medicamentos"/>
   <title>MediReminder — Iniciar Sesión</title>
-  <link rel="stylesheet" href="estilos.css"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#3b82f6"/>
 </head>
 <body>
 <div id="toast-caja"></div>
@@ -112,7 +113,34 @@
         ¿No tienes cuenta?
         <button onclick="cambiarModo('registro')" style="color:var(--azul);font-weight:800;text-decoration:underline;font-size:.875rem">Regístrate aquí</button>
       </p>
+      <p style="text-align:center;margin-top:.5rem">
+        <button onclick="mostrarRecuperar()" style="color:var(--g400);font-size:.8rem;text-decoration:underline">¿Olvidaste tu contraseña?</button>
+      </p>
 
+      <!-- Panel recuperar contraseña -->
+      <div id="panel-recuperar" style="display:none;margin-top:1rem;background:var(--azul-cl);border-radius:var(--r);padding:1.25rem">
+        <p style="font-weight:800;margin-bottom:.75rem">🔑 Recuperar Contraseña</p>
+        <div id="paso-email-rec">
+          <div class="campo-grupo" style="margin-bottom:.75rem">
+            <label class="campo-label">Tu correo electrónico</label>
+            <input type="email" id="inp-rec-email" class="campo-input" placeholder="tu@correo.com"/>
+          </div>
+          <button class="btn btn-azul w100" onclick="enviarCodigo()">Enviar código</button>
+        </div>
+        <div id="paso-codigo-rec" style="display:none">
+          <p style="font-size:.85rem;color:var(--g500);margin-bottom:.75rem">Ingresa el código de 6 dígitos enviado a tu correo</p>
+          <div class="campo-grupo" style="margin-bottom:.75rem">
+            <label class="campo-label">Código</label>
+            <input type="text" id="inp-rec-codigo" class="campo-input" placeholder="123456" maxlength="6"/>
+          </div>
+          <div class="campo-grupo" style="margin-bottom:.75rem">
+            <label class="campo-label">Nueva contraseña</label>
+            <input type="password" id="inp-rec-pass" class="campo-input" placeholder="Mínimo 6 caracteres"/>
+          </div>
+          <button class="btn btn-azul w100" onclick="resetPassword()">Cambiar contraseña</button>
+        </div>
+        <button onclick="ocultarRecuperar()" style="margin-top:.75rem;font-size:.8rem;color:var(--g400);text-decoration:underline;width:100%;text-align:center">Cancelar</button>
+      </div>
       <div class="demo-sep">
         <p>Acceso rápido de demostración:</p>
         <div class="demo-btns">
@@ -215,6 +243,51 @@
   }
 
   document.addEventListener('keydown', e => { if (e.key === 'Enter') enviar(); });
+
+
+function mostrarRecuperar() {
+    document.getElementById('panel-recuperar').style.display = 'block';
+    document.getElementById('paso-email-rec').style.display = 'block';
+    document.getElementById('paso-codigo-rec').style.display = 'none';
+  }
+  function ocultarRecuperar() {
+    document.getElementById('panel-recuperar').style.display = 'none';
+  }
+  async function enviarCodigo() {
+    const email = document.getElementById('inp-rec-email').value.trim();
+    if (!email) return mostrarError('Ingresa tu correo');
+    try {
+      await fetch(`${BACKEND_URL}/api/auth/recuperar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      document.getElementById('paso-email-rec').style.display = 'none';
+      document.getElementById('paso-codigo-rec').style.display = 'block';
+      Toast.ok('Código enviado. Revisa tu correo.');
+    } catch { mostrarError('Error al enviar. Intenta de nuevo.'); }
+  }
+  async function resetPassword() {
+    const email   = document.getElementById('inp-rec-email').value.trim();
+    const codigo  = document.getElementById('inp-rec-codigo').value.trim();
+    const pass    = document.getElementById('inp-rec-pass').value;
+    if (!codigo || !pass) return mostrarError('Completa todos los campos');
+    try {
+      const r = await fetch(`${BACKEND_URL}/api/auth/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, codigo, nuevaPassword: pass })
+      });
+      const d = await r.json();
+      if (!r.ok) return mostrarError(d.error);
+      Toast.ok('¡Contraseña actualizada! Inicia sesión.');
+      ocultarRecuperar();
+    } catch { mostrarError('Error al cambiar. Intenta de nuevo.'); }
+  }
+
+
+
+  
 </script>
 </body>
 </html>

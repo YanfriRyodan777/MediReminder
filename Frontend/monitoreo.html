@@ -4,7 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>MediReminder — Panel de Monitoreo</title>
-  <link rel="stylesheet" href="estilos.css"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#3b82f6"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -168,6 +169,11 @@
 
   (async () => {
     if (!await Sesion.requiereAuth()) return;
+    const _p = Sesion.perfilCache();
+    if (_p && _p.role === 'patient' && !_p.independentMode) {
+      window.location.href = '/recordatorios.html';
+      return;
+    }
     await inyectarNavegacion('monitoreo');
     mostrarTutorial();
     await cargarDatos();

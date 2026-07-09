@@ -4,7 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>MediReminder — Administrar Medicamentos</title>
-  <link rel="stylesheet" href="estilos.css"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#3b82f6"/>
 </head>
 <body>
 <div id="toast-caja"></div>
@@ -127,6 +128,11 @@
 
   (async () => {
     if (!await Sesion.requiereAuth()) return;
+    const _p = Sesion.perfilCache();
+    if (_p && _p.role === 'patient' && !_p.independentMode) {
+      window.location.href = '/recordatorios.html';
+      return;
+    }
     await inyectarNavegacion('medicamentos');
     mostrarTutorial();
     await cargarMedicamentos();
@@ -238,6 +244,11 @@
     if (!nombre || !dosis)   { Toast.warn('Nombre y dosis son obligatorios.'); return; }
     if (!tiempos.length)     { Toast.warn('Agrega al menos un horario.'); return; }
 
+    const btnGuardar = document.getElementById('btn-guardar-txt');
+    const btnEl = btnGuardar.closest('button');
+    btnEl.disabled = true;
+    btnGuardar.textContent = 'Guardando...';
+
     const fechaInicio = document.getElementById('inp-med-fecha').value;
     const datos = {
       name:         nombre,
@@ -261,7 +272,13 @@
       }
       renderizarLista();
       cerrarFormulario();
-    } catch (e) { Toast.err(e.message); }
+    } catch (e) {
+      Toast.err(e.message);
+    } finally {
+      btnEl.disabled = false;
+      btnGuardar.textContent = editandoId ? 'Guardar Cambios' : 'Agregar Medicina';
+    }
+  
   }
 
   function editarMedicamento(id) {

@@ -4,7 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>MediReminder — Configuración</title>
-  <link rel="stylesheet" href="estilos.css"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#3b82f6"/>
 </head>
 <body>
 <div id="toast-caja"></div>
@@ -148,6 +149,16 @@
     <div class="card">
       <h2 style="font-size:1rem;font-weight:900;margin-bottom:.875rem">🔧 Opciones Avanzadas</h2>
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem">
+        <div>
+          <p style="font-weight:800">Modo Oscuro</p>
+          <p style="font-size:.82rem;color:var(--g500)">Cambia el tema visual de la app</p>
+        </div>
+        <label class="toggle" aria-label="Activar modo oscuro">
+          <input type="checkbox" id="switch-oscuro" onchange="cambiarModoOscuro(this.checked)"/>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem;margin-top:.75rem">
         <div>
           <p style="font-weight:800">Reiniciar Tutorial de Bienvenida</p>
           <p style="font-size:.82rem;color:var(--g500)">Vuelve a ver la guía de inicio</p>
@@ -418,7 +429,17 @@ async function confirmarDesvincular() {
     } catch (e) { Toast.err(e.message); }
   }
 
-
+// Modo oscuro
+  function cambiarModoOscuro(val) {
+    document.body.classList.toggle('oscuro', val);
+    localStorage.setItem('mr_oscuro', val ? '1' : '0');
+    Toast.ok(val ? 'Modo oscuro activado' : 'Modo claro activado');
+  }
+  // Aplicar al cargar
+  if (localStorage.getItem('mr_oscuro') === '1') {
+    document.body.classList.add('oscuro');
+    document.getElementById('switch-oscuro').checked = true;
+  }
 
 </script>
 </body>

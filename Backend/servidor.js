@@ -10,6 +10,8 @@ const jwt        = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const cron       = require('node-cron');
 const { Pool }   = require('pg');
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ══════════════════════════════════════════════════════════
 //  POOL DE CONEXIÓN — Supabase Session Pooler (puerto 5432)
@@ -165,6 +167,41 @@ app.post('/api/auth/registro', async (req, res) => {
     const { rows } = await pool.query(
       'SELECT id, full_name, email, role, independent_mode FROM profiles WHERE id = $1', [id]
     );
+    // Enviar correo de bienvenida
+    try {
+      await resend.emails.send({
+        from:    'MediReminder <onboarding@resend.dev>',
+        to:      email,
+        subject: '💊 ¡Bienvenido/a a MediReminder!',
+        html:    `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+            <h2 style="color:#3b82f6">💊 MediReminder</h2>
+            <p>Hola <strong>${name}</strong>, ¡bienvenido/a!</p>
+            <p>Tu cuenta ha sido creada exitosamente como <strong>${role === 'patient' ? '🏥 Paciente' : '👨‍⚕️ Cuidador'}</strong>.</p>
+            <div style="background:#eff6ff;border-radius:12px;padding:1.25rem;margin:1.5rem 0">
+              <p style="font-weight:800;color:#1e40af;margin-bottom:.5rem">¿Qué puedes hacer ahora?</p>
+              <ul style="color:#3730a3;font-size:.9rem;line-height:1.8">
+                ${role === 'patient' ? `
+                <li>💊 Agregar tus medicamentos y horarios</li>
+                <li>🔔 Recibir alertas cuando sea hora de tomarlos</li>
+                <li>📊 Ver tu historial de adherencia</li>
+                ` : `
+                <li>🔗 Vincular al paciente que vas a monitorear</li>
+                <li>👁️ Ver su historial y adherencia en tiempo real</li>
+                <li>💊 Agregarle medicamentos desde tu cuenta</li>
+                `}
+              </ul>
+            </div>
+            <a href="https://medi-reminder-eight.vercel.app" style="display:inline-block;background:#3b82f6;color:#fff;font-weight:800;padding:.75rem 2rem;border-radius:8px;text-decoration:none">
+              Ir a MediReminder →
+            </a>
+            <p style="color:#9ca3af;font-size:.78rem;margin-top:2rem">
+              Si no creaste esta cuenta, ignora este correo.
+            </p>
+          </div>`
+      });
+    } catch { /* No bloquear registro si falla el correo */ }
+
     res.status(201).json({ token: generarToken(id), user: fmtUsuario(rows[0]) });
   } catch (err) {
     console.error('Error registro:', err.message);
@@ -173,6 +210,7 @@ app.post('/api/auth/registro', async (req, res) => {
 });
 
 // POST /api/auth/login
+
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -190,6 +228,75 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (err) {
     console.error('Error login:', err.message);
     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+// POST /api/auth/recuperar — enviar email con código
+app.post('/api/auth/recuperar', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email requerido' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, full_name FROM profiles WHERE email=$1', [email.toLowerCase()]
+    );
+    if (!rows.length) return res.json({ ok: true }); // No revelar si existe
+
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const expira = new Date(Date.now() + 15 * 60000); // 15 minutos
+
+    await pool.query(
+      `UPDATE profiles SET reset_code=$1, reset_code_expires=$2 WHERE email=$3`,
+      [codigo, expira, email.toLowerCase()]
+    );
+
+    await resend.emails.send({
+      from:    'MediReminder <onboarding@resend.dev>',
+      to:      email,
+      subject: '🔑 Código de recuperación — MediReminder',
+      html:    `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+          <h2 style="color:#3b82f6">💊 MediReminder</h2>
+          <p>Hola <strong>${rows[0].full_name}</strong>,</p>
+          <p>Tu código de recuperación es:</p>
+          <div style="font-size:2.5rem;font-weight:900;letter-spacing:.5rem;color:#1e40af;background:#eff6ff;padding:1.5rem;border-radius:12px;text-align:center;margin:1.5rem 0">
+            ${codigo}
+          </div>
+          <p style="color:#6b7280;font-size:.875rem">Este código expira en <strong>15 minutos</strong>.</p>
+          <p style="color:#6b7280;font-size:.875rem">Si no solicitaste esto, ignora este correo.</p>
+        </div>`
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error recuperar:', err.message);
+    res.status(500).json({ error: 'Error al enviar el correo' });
+  }
+});
+
+// POST /api/auth/reset — verificar código y cambiar contraseña
+app.post('/api/auth/reset', async (req, res) => {
+  const { email, codigo, nuevaPassword } = req.body;
+  if (!email || !codigo || !nuevaPassword)
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  if (nuevaPassword.length < 6)
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, reset_code, reset_code_expires FROM profiles WHERE email=$1`,
+      [email.toLowerCase()]
+    );
+    if (!rows.length) return res.status(400).json({ error: 'Código inválido' });
+    const u = rows[0];
+    if (u.reset_code !== codigo) return res.status(400).json({ error: 'Código incorrecto' });
+    if (new Date() > new Date(u.reset_code_expires)) return res.status(400).json({ error: 'Código expirado' });
+
+    const hash = await bcrypt.hash(nuevaPassword, 10);
+    await pool.query(
+      `UPDATE profiles SET password_hash=$1, reset_code=NULL, reset_code_expires=NULL WHERE id=$2`,
+      [hash, u.id]
+    );
+    res.json({ ok: true, mensaje: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    console.error('Error reset:', err.message);
+    res.status(500).json({ error: 'Error al actualizar contraseña' });
   }
 });
 // GET /api/paciente/datos — cuidador obtiene datos de su paciente vinculado
@@ -287,7 +394,7 @@ app.post('/api/medicamentos', autenticar, async (req, res) => {
     );
     if (rel.rows.length) targetUserId = rel.rows[0].patient_id;
   }
-
+// cron
   try {
     const { rows } = await pool.query(
       `INSERT INTO medicines (user_id, name, dosage, schedule_times, instructions, image_url, status, start_date)
@@ -665,6 +772,82 @@ cron.schedule('0 0 * * *', async () => {
     console.log(`[Cron] ✅ Registros generados para ${users.length} usuario(s)`);
   } catch (err) {
     console.error('[Cron] ❌ Error:', err.message);
+  }
+}, { timezone: 'America/Lima' });
+// ── Resumen semanal — todos los lunes a las 8am hora Lima ──
+cron.schedule('0 8 * * 1', async () => {
+  console.log('[Cron] Enviando resúmenes semanales...');
+  try {
+    const { rows: users } = await pool.query(
+      `SELECT p.id, p.full_name, p.email
+       FROM profiles p
+       WHERE p.role = 'patient'`
+    );
+    for (const u of users) {
+      try {
+        const hace7 = new Date();
+        hace7.setDate(hace7.getDate() - 7);
+        const fechaInicio = hace7.toISOString().split('T')[0];
+
+        const { rows: logs } = await pool.query(
+          `SELECT ml.status FROM medicine_logs ml
+           WHERE ml.user_id=$1
+             AND ml.scheduled_date >= $2
+             AND ml.status != 'pending'`,
+          [u.id, fechaInicio]
+        );
+
+        if (!logs.length) continue;
+
+        const tomadas  = logs.filter(l => l.status === 'taken').length;
+        const omitidas = logs.filter(l => l.status === 'missed').length;
+        const total    = logs.length;
+        const adh      = Math.round((tomadas / total) * 100);
+        const emoji    = adh >= 80 ? '🟢' : adh >= 50 ? '🟡' : '🔴';
+
+        await resend.emails.send({
+          from:    'MediReminder <onboarding@resend.dev>',
+          to:      u.email,
+          subject: `📊 Tu resumen semanal — MediReminder`,
+          html:    `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+              <h2 style="color:#3b82f6">💊 MediReminder</h2>
+              <p>Hola <strong>${u.full_name}</strong>, aquí está tu resumen de la semana:</p>
+              <div style="background:#eff6ff;border-radius:12px;padding:1.5rem;margin:1.5rem 0;text-align:center">
+                <p style="font-size:3rem;margin:0">${emoji}</p>
+                <p style="font-size:2.5rem;font-weight:900;color:#1e40af;margin:.5rem 0">${adh}%</p>
+                <p style="color:#3b82f6;font-weight:700">Adherencia semanal</p>
+              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+                <tr style="background:#f1f5f9">
+                  <td style="padding:.625rem 1rem;border-radius:6px">✅ Tomadas</td>
+                  <td style="padding:.625rem 1rem;font-weight:800;text-align:right">${tomadas}</td>
+                </tr>
+                <tr>
+                  <td style="padding:.625rem 1rem">❌ Omitidas</td>
+                  <td style="padding:.625rem 1rem;font-weight:800;text-align:right">${omitidas}</td>
+                </tr>
+                <tr style="background:#f1f5f9">
+                  <td style="padding:.625rem 1rem;border-radius:6px">📋 Total programadas</td>
+                  <td style="padding:.625rem 1rem;font-weight:800;text-align:right">${total}</td>
+                </tr>
+              </table>
+              <div style="margin-top:1.5rem;text-align:center">
+                <a href="https://medi-reminder-eight.vercel.app/monitoreo.html"
+                   style="background:#3b82f6;color:#fff;font-weight:800;padding:.75rem 2rem;border-radius:8px;text-decoration:none">
+                  Ver historial completo →
+                </a>
+              </div>
+              <p style="color:#9ca3af;font-size:.75rem;margin-top:2rem;text-align:center">
+                MediReminder — Mejorando la adherencia a tratamientos médicos
+              </p>
+            </div>`
+        });
+      } catch { /* silencioso por usuario */ }
+    }
+    console.log(`[Cron] ✅ Resúmenes enviados a ${users.length} usuario(s)`);
+  } catch (err) {
+    console.error('[Cron] ❌ Error resumen semanal:', err.message);
   }
 }, { timezone: 'America/Lima' });
 
