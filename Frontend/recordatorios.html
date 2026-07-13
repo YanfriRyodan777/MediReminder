@@ -174,7 +174,13 @@
             </div>
             <div class="pend-hora-box">
               <p class="pend-hora-label">Hora</p>
-              <p class="pend-hora-val">${(() => { const [h,m] = log.scheduledTime.split(':'); const d = new Date(); d.setHours(+h,+m); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); })()}</p>
+              ${pospuestosHora.has(log.id) ? `
+                <p class="pend-hora-label" style="color:var(--amarillo)">Pospuesto</p>
+                <p class="pend-hora-val" style="color:var(--amarillo)">${pospuestosHora.get(log.id)}</p>
+              ` : `
+                <p class="pend-hora-label">Hora</p>
+                <p class="pend-hora-val">${(() => { const [h,m] = log.scheduledTime.split(':'); const d = new Date(); d.setHours(+h,+m); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); })()}</p>
+              `}
             </div>
           </div>
           <div class="pend-acciones">
@@ -238,21 +244,27 @@
   async function confirmarTomada() { if (logAlerta) { await accionTomada(logAlerta.id); ocultarAlerta(); } }
   async function confirmarOmitida(){ if (logAlerta) { await accionOmitida(logAlerta.id); ocultarAlerta(); } }
 
+  const pospuestosHora = new Map(); // guarda la nueva hora por id
+
   function posponer(min) {
     if (!logAlerta) return;
-    const id = logAlerta.id;
+    const id       = logAlerta.id;
+    const nuevaHora = new Date(Date.now() + min * 60000)
+      .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     pospuestos.add(id);
+    pospuestosHora.set(id, nuevaHora);
     ocultarAlerta();
     if (timers.has(id)) clearTimeout(timers.get(id));
     timers.set(id, setTimeout(() => {
-      pospuestos.delete(id); timers.delete(id);
+      pospuestos.delete(id);
+      pospuestosHora.delete(id);
+      timers.delete(id);
       const log = logs.find(l => l.id === id);
       if (log && log.status === 'pending') mostrarAlerta(log);
     }, min * 60000));
-    const nuevaHora = new Date(Date.now() + min * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    renderizar();
     Toast.info(`Pospuesto — nueva hora: ${nuevaHora}`);
   }
-
   async function accionTomada(id) {
     try {
       const r = await Registros.marcarTomado(id);

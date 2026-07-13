@@ -39,6 +39,20 @@
     </div>
 
 
+
+<!-- ── Cambiar modo (solo pacientes) ─────────────── -->
+    <div id="card-modo" class="card" style="display:none">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.5rem">🔄 Cambiar Modo</h2>
+      <p style="font-size:.85rem;color:var(--g500);margin-bottom:1rem">
+        Modo Independiente: tú administras todo.<br/>
+        Con Supervisión: un cuidador te acompaña.
+      </p>
+      <div style="display:flex;gap:.75rem">
+        <button id="btn-modo-ind" class="btn w100" onclick="cambiarModo(true)">🧍 Independiente</button>
+        <button id="btn-modo-sup" class="btn w100" onclick="cambiarModo(false)">👥 Con Supervisión</button>
+      </div>
+    </div>
+
 <!-- ── Vincular Paciente (solo cuidadores) ───────── -->
     <div id="sec-vincular" class="card" style="display:none">
       <h2 style="font-size:1rem;font-weight:900;margin-bottom:.5rem">🔗 Vincular Paciente</h2>
@@ -79,6 +93,16 @@
           <option value="30">30 minutos antes</option>
           <option value="60">1 hora antes</option>
         </select>
+      </div>
+      <div style="background:var(--g50);border-radius:var(--r-sm);padding:1rem;margin-top:.875rem">
+        <label class="campo-label" style="display:block;margin-bottom:.5rem">🎵 Tipo de Sonido de Alarma</label>
+        <p style="font-size:.82rem;color:var(--g500);margin-bottom:.625rem">Elige cómo suena tu recordatorio</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.75rem">
+          <button id="snd-clasico"  onclick="elegirSonido('clasico')"  class="btn btn-sm btn-borde">🔔 Clásico</button>
+          <button id="snd-urgente"  onclick="elegirSonido('urgente')"  class="btn btn-sm btn-borde">🚨 Urgente</button>
+          <button id="snd-suave"    onclick="elegirSonido('suave')"    class="btn btn-sm btn-borde">🎵 Suave</button>
+        </div>
+        <button class="btn btn-gris btn-sm w100" onclick="reproducirAlarma()">▶ Probar sonido</button>
       </div>
     </div>
 
@@ -275,7 +299,14 @@
 
 const secVincular = document.getElementById('sec-vincular');
     if (secVincular) secVincular.style.display = !esPac ? 'block' : 'none';
-
+async function cambiarModo(independentMode) {
+    try {
+      await Sesion.cambiarModo(independentMode);
+      Toast.ok(independentMode ? 'Cambiado a Modo Independiente' : 'Cambiado a Modo Supervisión');
+      await pintarPerfil();
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (e) { Toast.err(e.message); }
+  }
 
   }
 
@@ -475,11 +506,32 @@ async function cambiarPassword() {
       Toast.ok('¡Contraseña actualizada correctamente! 🔐');
     } catch (e) { Toast.err(e.message); }
   }
+
+
+
+  function elegirSonido(tipo) {
+    localStorage.setItem('mr_sonido', tipo);
+    ['clasico','urgente','suave'].forEach(t => {
+      document.getElementById(`snd-${t}`).className =
+        `btn btn-sm ${t === tipo ? 'btn-azul' : 'btn-borde'}`;
+    });
+    reproducirAlarma(tipo);
+    Toast.ok(`Sonido "${tipo}" seleccionado.`);
+  }
+  // Marcar el activo al cargar
+  (function() {
+    const actual = localStorage.getItem('mr_sonido') || 'clasico';
+    const el = document.getElementById(`snd-${actual}`);
+    if (el) el.className = 'btn btn-sm btn-azul';
+  })();
 </script>
+
+
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
+
 
   
 </script>

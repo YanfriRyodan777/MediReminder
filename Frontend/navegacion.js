@@ -25,14 +25,22 @@ async function iniciarAlarmaGlobal() {
 
   verificar();
   _alarmaGlobalInterval = setInterval(verificar, 60000);
+
+if (paginaActual !== 'recordatorios') {
+    iniciarAlarmaGlobal();
+  }
+
 }
 
 async function inyectarNavegacion(paginaActual) {
   const perfil = await Sesion.refrescarPerfil();
   if (!perfil) return;
 
-  const nombre   = perfil.full_name || perfil.name || '—';
+  const nombre     = perfil.full_name || perfil.name || '—';
   const esPaciente = perfil.role === 'patient';
+  const subtitulo  = esPaciente && perfil.caregiverName
+    ? `Cuidado por: ${perfil.caregiverName}`
+    : nombre === perfil.full_name ? '' : '';
 
   const tieneSupervision = !perfil.independentMode;
 
@@ -46,7 +54,10 @@ async function inyectarNavegacion(paginaActual) {
     </a>
     <a href="/monitoreo.html" class="nav-link ${paginaActual==='monitoreo'?'ativo':''}" aria-label="Reportes">
       📊 <span class="nav-etiq">Reportes</span>
-    </a>` : ''}`;
+    </a>` : `
+    <a href="/monitoreo.html" class="nav-link ${paginaActual==='monitoreo'?'ativo':''}" aria-label="Reportes">
+      📊 <span class="nav-etiq">Reportes</span>
+    </a>`}`;
 
   const enlacesCui = `
     <a href="/monitoreo.html" class="nav-link ativo-morado ${paginaActual==='monitoreo'?'ativo-morado':''}" aria-label="Monitoreo">
@@ -63,7 +74,8 @@ async function inyectarNavegacion(paginaActual) {
           <div class="brand-icon" aria-hidden="true">💊</div>
           <div>
             <div class="brand-name">MediReminder</div>
-            <div class="brand-user">${nombre}</div>
+           <div class="brand-user">${nombre}</div>
+            ${esPaciente && perfil.caregiverName ? `<div style="font-size:.65rem;color:#7c3aed;font-weight:700">👨‍⚕️ ${perfil.caregiverName}</div>` : ''}
           </div>
         </div>
         <div class="navbar-links">

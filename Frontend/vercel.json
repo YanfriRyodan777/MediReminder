@@ -1,6 +1,7 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
-    { "source": "/",               "destination": "/landing.html"       },
     { "source": "/landing",        "destination": "/landing.html"       },
     { "source": "/login",          "destination": "/inicio.html"        },
     { "source": "/inicio",         "destination": "/inicio.html"        },
@@ -16,8 +17,8 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff"                       },
-        { "key": "X-Frame-Options",        "value": "DENY"                          },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options",        "value": "DENY"    },
         { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" }
       ]
     }

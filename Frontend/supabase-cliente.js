@@ -79,7 +79,11 @@ const Sesion = {
   },
   cambiarPassword: (passwordActual, nuevaPassword) =>
     api('PUT', '/api/auth/cambiar-password', { passwordActual, nuevaPassword }),
+  cambiarModo: (independentMode) => api('PUT', '/api/auth/cambiar-modo', { independentMode }),
 };
+
+
+
 
 // ══════════════════════════════════════════════════════════════
 //  AUTH
@@ -188,20 +192,44 @@ const Fecha = {
 // ══════════════════════════════════════════════════════════════
 //  SONIDO DE ALARMA
 // ══════════════════════════════════════════════════════════════
-function reproducirAlarma() {
+function reproducirAlarma(tipoSonido) {
+  const tipo = tipoSonido || localStorage.getItem('mr_sonido') || 'clasico';
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [0, 700, 1400].forEach((delay) => {
-      const osc  = ctx.createOscillator();
+    if (tipo === 'clasico') {
+      [0, 700, 1400].forEach((delay) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880; osc.type = 'sine';
+        const t = ctx.currentTime + delay / 1000;
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+        osc.start(t); osc.stop(t + 0.6);
+      });
+    } else if (tipo === 'urgente') {
+      [0, 300, 600, 900].forEach((delay) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = delay % 600 === 0 ? 1100 : 800;
+        osc.type = 'square';
+        const t = ctx.currentTime + delay / 1000;
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        osc.start(t); osc.stop(t + 0.25);
+      });
+    } else if (tipo === 'suave') {
+      const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = 880; osc.type = 'sine';
-      const t = ctx.currentTime + delay / 1000;
-      gain.gain.setValueAtTime(0.35, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-      osc.start(t); osc.stop(t + 0.6);
-    });
-  } catch { /* navegador sin soporte audio */ }
+      osc.frequency.value = 528; osc.type = 'sine';
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.5);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 2);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 2);
+    }
+  } catch { /* sin soporte audio */ }
 }
 
 // ══════════════════════════════════════════════════════════════

@@ -317,7 +317,21 @@ app.put('/api/auth/cambiar-password', autenticar, async (req, res) => {
     await pool.query('UPDATE profiles SET password_hash=$1 WHERE id=$2', [hash, req.usuario.id]);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+
 });
+
+// PUT /api/auth/cambiar-modo
+app.put('/api/auth/cambiar-modo', autenticar, async (req, res) => {
+  const { independentMode } = req.body;
+  try {
+    await pool.query(
+      'UPDATE profiles SET independent_mode=$1 WHERE id=$2',
+      [independentMode, req.usuario.id]
+    );
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 
 // GET /api/paciente/datos — cuidador obtiene datos de su paciente vinculado
 app.get('/api/paciente/datos', autenticar, async (req, res) => {
@@ -359,6 +373,15 @@ app.get('/api/paciente/datos', autenticar, async (req, res) => {
 app.get('/api/auth/perfil', autenticar, async (req, res) => {
   try {
     const u = fmtUsuario(req.usuario);
+    if (req.usuario.role === 'patient') {
+      const { rows: cuidadores } = await pool.query(
+        `SELECT p.full_name FROM patient_caregiver_relationships r
+         JOIN profiles p ON p.id = r.caregiver_id
+         WHERE r.patient_id=$1 AND r.status='active' LIMIT 1`,
+        [req.usuario.id]
+      );
+      u.caregiverName = cuidadores[0]?.full_name || null;
+    }
     if (req.usuario.role === 'caregiver') {
       const { rows } = await pool.query(
         `SELECT p.id, p.full_name, p.email
