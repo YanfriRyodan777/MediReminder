@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="description" content="MediReminder — Sistema inteligente de recordatorio de medicamentos para adultos mayores y cuidadores."/>
+  <title>MediReminder — Tu compañero de salud personal</title>
+  <link rel="stylesheet" href="estilos.css"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#3b82f6"/>
+  <style>
+    .landing-hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%)}
+    .landing-logo{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;justify-content:center}
+    .landing-logo-icon{width:64px;height:64px;background:#3b82f6;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:2rem}
+    .landing-titulo{font-size:clamp(2rem,5vw,3.5rem);font-weight:900;color:#0f172a;line-height:1.1;margin-bottom:1rem}
+    .landing-titulo span{color:#3b82f6}
+    .landing-sub{font-size:clamp(1rem,2.5vw,1.25rem);color:#475569;max-width:560px;margin:0 auto 2.5rem}
+    .landing-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:4rem}
+    .landing-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;max-width:900px;width:100%;margin:0 auto}
+    .feature-card{background:#fff;border-radius:16px;padding:1.5rem;text-align:left;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e2e8f0}
+    .feature-icon{font-size:2rem;margin-bottom:.75rem}
+    .feature-title{font-weight:900;font-size:1rem;margin-bottom:.375rem;color:#0f172a}
+    .feature-desc{font-size:.875rem;color:#64748b;line-height:1.5}
+    .landing-footer{margin-top:4rem;padding:2rem;text-align:center;border-top:1px solid #e2e8f0}
+    .landing-roles{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:3rem}
+    .role-card{background:#fff;border-radius:16px;padding:1.5rem 2rem;border:2px solid #e2e8f0;min-width:200px;text-align:center}
+    .role-card:first-child{border-color:#3b82f6;background:#eff6ff}
+    .role-card:last-child{border-color:#8b5cf6;background:#f5f3ff}
+    .pulse{display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:.4rem;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    @media(max-width:600px){.landing-btns{flex-direction:column;align-items:center}.landing-btns .btn{width:100%;max-width:280px}}
+  </style>
+</head>
+<body>
+<main>
+
+  <!-- Hero -->
+  <section class="landing-hero">
+    <div class="landing-logo">
+      <div class="landing-logo-icon">💊</div>
+      <div style="text-align:left">
+        <div style="font-size:1.75rem;font-weight:900;color:#0f172a">MediReminder</div>
+        <div style="font-size:.85rem;color:#64748b"><span class="pulse"></span>Sistema activo</div>
+      </div>
+    </div>
+
+    <h1 class="landing-titulo">
+      Nunca más olvides<br/><span>tus medicamentos</span>
+    </h1>
+    <p class="landing-sub">
+      Sistema inteligente de recordatorio para adultos mayores y cuidadores.
+      Alertas en tiempo real, seguimiento familiar y reportes médicos.
+    </p>
+
+    <div class="landing-btns">
+      <a href="/inicio.html" class="btn btn-azul btn-lg" style="font-size:1rem;padding:.875rem 2rem">
+        🚀 Comenzar gratis
+      </a>
+      <a href="/inicio.html" class="btn btn-borde btn-lg" style="font-size:1rem;padding:.875rem 2rem" onclick="localStorage.setItem('mr_demo_intent','true')">
+        👁️ Ver demostración
+      </a>
+    </div>
+
+    <!-- Roles -->
+    <div class="landing-roles">
+      <div class="role-card">
+        <div style="font-size:2rem;margin-bottom:.5rem">🏥</div>
+        <div style="font-weight:900;color:#1e40af">Paciente</div>
+        <div style="font-size:.82rem;color:#3b82f6;margin-top:.25rem">Recibe tus alertas</div>
+      </div>
+      <div class="role-card">
+        <div style="font-size:2rem;margin-bottom:.5rem">👨‍⚕️</div>
+        <div style="font-weight:900;color:#5b21b6">Cuidador / Familiar</div>
+        <div style="font-size:.82rem;color:#7c3aed;margin-top:.25rem">Monitorea en tiempo real</div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <div class="landing-features">
+      <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <div class="feature-title">Alertas Inteligentes</div>
+        <div class="feature-desc">Sonido y aviso visual en cualquier parte de la app cuando sea hora de tu medicina.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👨‍👩‍👧</div>
+        <div class="feature-title">Seguimiento Familiar</div>
+        <div class="feature-desc">El cuidador ve el historial y adherencia del paciente en tiempo real.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Reportes Médicos</div>
+        <div class="feature-desc">Exporta historial en PDF, TXT o CSV para compartir con tu médico.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <div class="feature-title">Programación Flexible</div>
+        <div class="feature-desc">Programa medicamentos para hoy, mañana o cualquier fecha futura.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-title">Personalizable</div>
+        <div class="feature-desc">Temas de color, modo oscuro y configuración de notificaciones a tu gusto.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Seguro y Privado</div>
+        <div class="feature-desc">Datos cifrados con JWT y almacenados en Supabase con políticas de seguridad.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <p style="font-weight:900;color:#0f172a;margin-bottom:.5rem">💊 MediReminder</p>
+    <p style="font-size:.875rem;color:#64748b;margin-bottom:1rem">Mejorando la adherencia a tratamientos médicos</p>
+    <a href="/inicio.html" class="btn btn-azul">Iniciar sesión →</a>
+    <p style="font-size:.75rem;color:#94a3b8;margin-top:1.5rem">
+      Proyecto universitario — No reemplaza la consulta médica profesional
+    </p>
+  </footer>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-cliente.js"></script>
+<script>
+  // Si ya tiene sesión, redirigir directo
+  (function() {
+    const p = localStorage.getItem('mr_perfil');
+    const t = localStorage.getItem('mr_token');
+    if (p && t) {
+      const perfil = JSON.parse(p);
+      window.location.href = perfil.role === 'caregiver' ? '/monitoreo.html' : '/recordatorios.html';
+    }
+  })();
+</script>
+</body>
+</html>

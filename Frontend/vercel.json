@@ -1,18 +1,23 @@
 {
   "rewrites": [
-    { "source": "/",               "destination": "/inicio.html"        },
+    { "source": "/",               "destination": "/landing.html"       },
+    { "source": "/landing",        "destination": "/landing.html"       },
+    { "source": "/login",          "destination": "/inicio.html"        },
     { "source": "/inicio",         "destination": "/inicio.html"        },
     { "source": "/recordatorios",  "destination": "/recordatorios.html" },
     { "source": "/medicamentos",   "destination": "/medicamentos.html"  },
     { "source": "/monitoreo",      "destination": "/monitoreo.html"     },
     { "source": "/configuracion",  "destination": "/configuracion.html" }
   ],
+  "errors": [
+    { "statusCode": 404, "source": "/(.*)", "destination": "/404.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options",        "value": "DENY"    },
+        { "key": "X-Content-Type-Options", "value": "nosniff"                       },
+        { "key": "X-Frame-Options",        "value": "DENY"                          },
         { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" }
       ]
     }

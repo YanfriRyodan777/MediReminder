@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
-  <meta http-equiv="refresh" content="0; url=/inicio.html"/>
   <meta name="google-site-verification" content="kPdeQ2F5QF6aVX5uSiBEWWvQrVBYpeojJEDigDFc1jg" />
+  <meta http-equiv="refresh" content="0; url=/landing.html"/>
   <meta name="description" content="MediReminder — Sistema inteligente de recordatorio de medicamentos para adultos mayores y cuidadores. Nunca olvides tomar tus medicinas."/>
   <meta name="keywords" content="recordatorio medicamentos, pastillas, adultos mayores, cuidadores, adherencia médica"/>
   <meta property="og:title" content="MediReminder — Tu compañero de salud"/>
@@ -12,7 +12,13 @@
   <meta property="og:type" content="website"/>
   <title>MediReminder</title>
 </head>
+
 <body>
-  <script>window.location.replace('/inicio.html');</script>
+  <script>window.location.replace('/landing.html');</script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+</script>
 </body>
 </html>

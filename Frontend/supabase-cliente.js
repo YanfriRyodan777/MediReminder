@@ -77,6 +77,8 @@ const Sesion = {
     if (!this.obtenerToken()) { window.location.href = '/inicio.html'; return false; }
     return true;
   },
+  cambiarPassword: (passwordActual, nuevaPassword) =>
+    api('PUT', '/api/auth/cambiar-password', { passwordActual, nuevaPassword }),
 };
 
 // ══════════════════════════════════════════════════════════════

@@ -299,6 +299,26 @@ app.post('/api/auth/reset', async (req, res) => {
     res.status(500).json({ error: 'Error al actualizar contraseña' });
   }
 });
+
+// PUT /api/auth/cambiar-password
+app.put('/api/auth/cambiar-password', autenticar, async (req, res) => {
+  const { passwordActual, nuevaPassword } = req.body;
+  if (!passwordActual || !nuevaPassword)
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  if (nuevaPassword.length < 6)
+    return res.status(400).json({ error: 'Mínimo 6 caracteres' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT password_hash FROM profiles WHERE id=$1', [req.usuario.id]
+    );
+    const ok = await bcrypt.compare(passwordActual, rows[0].password_hash || '');
+    if (!ok) return res.status(400).json({ error: 'Contraseña actual incorrecta' });
+    const hash = await bcrypt.hash(nuevaPassword, 10);
+    await pool.query('UPDATE profiles SET password_hash=$1 WHERE id=$2', [hash, req.usuario.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // GET /api/paciente/datos — cuidador obtiene datos de su paciente vinculado
 app.get('/api/paciente/datos', autenticar, async (req, res) => {
   try {

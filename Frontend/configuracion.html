@@ -146,6 +146,25 @@
       </div>
     </div>
 
+
+<!-- ── Cambiar contraseña ─────────────────────────── -->
+    <div class="card">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.875rem">🔐 Cambiar Contraseña</h2>
+      <div class="campo-grupo" style="margin-bottom:.75rem">
+        <label class="campo-label">Contraseña actual</label>
+        <input type="password" id="inp-pass-actual" class="campo-input" placeholder="Tu contraseña actual"/>
+      </div>
+      <div class="campo-grupo" style="margin-bottom:.75rem">
+        <label class="campo-label">Nueva contraseña</label>
+        <input type="password" id="inp-pass-nueva" class="campo-input" placeholder="Mínimo 6 caracteres"/>
+      </div>
+      <div class="campo-grupo" style="margin-bottom:.875rem">
+        <label class="campo-label">Confirmar nueva contraseña</label>
+        <input type="password" id="inp-pass-confirmar" class="campo-input" placeholder="Repite la nueva contraseña"/>
+      </div>
+      <button class="btn btn-azul w100" onclick="cambiarPassword()">🔐 Cambiar Contraseña</button>
+    </div>
+
     <!-- ── Opciones avanzadas ──────────────────────────── -->
     <div class="card">
       <h2 style="font-size:1rem;font-weight:900;margin-bottom:.875rem">🔧 Opciones Avanzadas</h2>
@@ -441,7 +460,28 @@ async function confirmarDesvincular() {
     document.body.classList.add('oscuro');
     document.getElementById('switch-oscuro').checked = true;
   }
+async function cambiarPassword() {
+    const actual     = document.getElementById('inp-pass-actual').value;
+    const nueva      = document.getElementById('inp-pass-nueva').value;
+    const confirmar  = document.getElementById('inp-pass-confirmar').value;
+    if (!actual || !nueva || !confirmar) return Toast.warn('Completa todos los campos.');
+    if (nueva !== confirmar) return Toast.warn('Las contraseñas nuevas no coinciden.');
+    if (nueva.length < 6) return Toast.warn('Mínimo 6 caracteres.');
+    try {
+      await Sesion.cambiarPassword(actual, nueva);
+      document.getElementById('inp-pass-actual').value    = '';
+      document.getElementById('inp-pass-nueva').value     = '';
+      document.getElementById('inp-pass-confirmar').value = '';
+      Toast.ok('¡Contraseña actualizada correctamente! 🔐');
+    } catch (e) { Toast.err(e.message); }
+  }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
 
+  
 </script>
 </body>
 </html>
