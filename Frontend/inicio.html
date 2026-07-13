@@ -292,8 +292,8 @@ function mostrarRecuperar() {
 </script>
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').catch(function() {});
   }
-</script>
+</script>>
 </body>
 </html>

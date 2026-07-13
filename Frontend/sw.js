@@ -1,4 +1,5 @@
-// sw.js — Service Worker mínimo para activar PWA
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', () => {});
-self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));
+self.addEventListener('install', function() { self.skipWaiting(); });
+self.addEventListener('activate', function() {});
+self.addEventListener('fetch', function(e) {
+  e.respondWith(fetch(e.request));
+});
