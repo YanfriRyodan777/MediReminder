@@ -250,8 +250,8 @@ app.post('/api/auth/recuperar', async (req, res) => {
 
     await resend.emails.send({
       from:    'MediReminder <onboarding@resend.dev>',
-      to:      email,
-      subject: '🔑 Código de recuperación — MediReminder',
+      to:      'alonso.dioses02@gmail.com',
+      subject: `🔑 Código para ${email} — MediReminder`,
       html:    `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
           <h2 style="color:#3b82f6">💊 MediReminder</h2>

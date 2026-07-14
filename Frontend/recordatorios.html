@@ -281,9 +281,12 @@
       await Registros.marcarOmitido(id);
       omitidosSession.add(id);
       sessionStorage.setItem('mr_omitidos', JSON.stringify([...omitidosSession]));
+      // Sincronizar con alarma global
+      if (window._omitidosGlobal) window._omitidosGlobal.add(id);
       logs = logs.map(l => l.id === id ? { ...l, status: 'missed' } : l);
       renderizar();
     } catch (err) { Toast.err(err.message); }
+  
   
   }
 </script>

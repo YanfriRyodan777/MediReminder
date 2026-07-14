@@ -64,6 +64,24 @@
       <div id="resultado-paciente" style="margin-top:.75rem"></div>
     </div>
 
+
+    <!-- ── Cambiar modo (solo pacientes) ─────────────── -->
+    <div id="card-modo" class="card" style="display:none">
+      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.5rem">🔄 Modo de Uso</h2>
+      <p style="font-size:.85rem;color:var(--g500);margin-bottom:1rem">
+        Cambia cómo usas MediReminder según tus necesidades actuales.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <button id="btn-modo-ind" class="btn btn-borde w100" onclick="cambiarModoUso(true)">
+          🧍 Independiente
+        </button>
+        <button id="btn-modo-sup" class="btn btn-borde w100" onclick="cambiarModoUso(false)">
+          👥 Con Supervisión
+        </button>
+      </div>
+      <p id="txt-modo-actual" style="font-size:.78rem;color:var(--g500);margin-top:.75rem;text-align:center"></p>
+    </div>
+
     <!-- ── Notificaciones ─────────────────────────────── -->
     <div class="card">
       <h2 style="font-size:1rem;font-weight:900;margin-bottom:1rem">🔔 Notificaciones y Alertas</h2>
@@ -171,28 +189,21 @@
     </div>
 
 
-<!-- ── Cambiar contraseña ─────────────────────────── -->
-    <div class="card">
-      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.875rem">🔐 Cambiar Contraseña</h2>
-      <div class="campo-grupo" style="margin-bottom:.75rem">
-        <label class="campo-label">Contraseña actual</label>
-        <input type="password" id="inp-pass-actual" class="campo-input" placeholder="Tu contraseña actual"/>
-      </div>
-      <div class="campo-grupo" style="margin-bottom:.75rem">
-        <label class="campo-label">Nueva contraseña</label>
-        <input type="password" id="inp-pass-nueva" class="campo-input" placeholder="Mínimo 6 caracteres"/>
-      </div>
-      <div class="campo-grupo" style="margin-bottom:.875rem">
-        <label class="campo-label">Confirmar nueva contraseña</label>
-        <input type="password" id="inp-pass-confirmar" class="campo-input" placeholder="Repite la nueva contraseña"/>
-      </div>
-      <button class="btn btn-azul w100" onclick="cambiarPassword()">🔐 Cambiar Contraseña</button>
-    </div>
+
 
     <!-- ── Opciones avanzadas ──────────────────────────── -->
     <div class="card">
       <h2 style="font-size:1rem;font-weight:900;margin-bottom:.875rem">🔧 Opciones Avanzadas</h2>
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem">
+        
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem;margin-bottom:.75rem">
+        <div>
+          <p style="font-weight:800">Cambiar Contraseña</p>
+          <p style="font-size:.82rem;color:var(--g500)">Actualiza tu contraseña de acceso</p>
+        </div>
+        <button class="btn btn-azul btn-sm" onclick="abrirModalPassword()">🔐 Cambiar</button>
+      </div>
+
         <div>
           <p style="font-weight:800">Modo Oscuro</p>
           <p style="font-size:.82rem;color:var(--g500)">Cambia el tema visual de la app</p>
@@ -223,7 +234,34 @@
 
     <p style="text-align:center;font-size:.78rem;color:var(--g400)">MediReminder v1.0.0 — Mejorando la adherencia a tratamientos médicos</p>
 
+
+
   </div>
+  <!-- Modal cambiar contraseña -->
+<div id="modal-password" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--blanco,#fff);border-radius:16px;padding:2rem;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <p style="font-size:1.1rem;font-weight:900">🔐 Cambiar Contraseña</p>
+      <button onclick="cerrarModalPassword()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--g400)">✕</button>
+    </div>
+    <div class="campo-grupo" style="margin-bottom:.75rem">
+      <label class="campo-label">Contraseña actual</label>
+      <input type="password" id="inp-pass-actual" class="campo-input" placeholder="Tu contraseña actual"/>
+    </div>
+    <div class="campo-grupo" style="margin-bottom:.75rem">
+      <label class="campo-label">Nueva contraseña</label>
+      <input type="password" id="inp-pass-nueva" class="campo-input" placeholder="Mínimo 6 caracteres"/>
+    </div>
+    <div class="campo-grupo" style="margin-bottom:1.25rem">
+      <label class="campo-label">Confirmar nueva contraseña</label>
+      <input type="password" id="inp-pass-confirmar" class="campo-input" placeholder="Repite la nueva contraseña"/>
+    </div>
+    <div style="display:flex;gap:.75rem">
+      <button class="btn btn-borde w100" onclick="cerrarModalPassword()">Cancelar</button>
+      <button class="btn btn-azul w100" onclick="cambiarPassword()">Guardar</button>
+    </div>
+  </div>
+</div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -308,6 +346,19 @@ async function cambiarModo(independentMode) {
     } catch (e) { Toast.err(e.message); }
   }
 
+  // Mostrar card de modo solo para pacientes
+    const cardModo = document.getElementById('card-modo');
+    if (cardModo && esPac) {
+      cardModo.style.display = 'block';
+      const esInd = p.independentMode;
+      document.getElementById('btn-modo-ind').className =
+        `btn w100 ${esInd ? 'btn-azul' : 'btn-borde'}`;
+      document.getElementById('btn-modo-sup').className =
+        `btn w100 ${!esInd ? 'btn-azul' : 'btn-borde'}`;
+      document.getElementById('txt-modo-actual').textContent =
+        esInd ? 'Actualmente en Modo Independiente — administras todo tú.'
+               : 'Actualmente en Modo Supervisión — un cuidador te acompaña.';
+    }
   }
 
   
@@ -524,6 +575,48 @@ async function cambiarPassword() {
     const el = document.getElementById(`snd-${actual}`);
     if (el) el.className = 'btn btn-sm btn-azul';
   })();
+
+function abrirModalPassword() {
+    document.getElementById('modal-password').style.display = 'flex';
+    document.getElementById('inp-pass-actual').focus();
+  }
+  function cerrarModalPassword() {
+    document.getElementById('modal-password').style.display = 'none';
+    document.getElementById('inp-pass-actual').value    = '';
+    document.getElementById('inp-pass-nueva').value     = '';
+    document.getElementById('inp-pass-confirmar').value = '';
+  }
+  async function cambiarPassword() {
+    const actual    = document.getElementById('inp-pass-actual').value;
+    const nueva     = document.getElementById('inp-pass-nueva').value;
+    const confirmar = document.getElementById('inp-pass-confirmar').value;
+    if (!actual || !nueva || !confirmar) return Toast.warn('Completa todos los campos.');
+    if (nueva !== confirmar) return Toast.warn('Las contraseñas nuevas no coinciden.');
+    if (nueva.length < 6) return Toast.warn('Mínimo 6 caracteres.');
+    try {
+      await Sesion.cambiarPassword(actual, nueva);
+      cerrarModalPassword();
+      Toast.ok('¡Contraseña actualizada! 🔐');
+    } catch (e) { Toast.err(e.message); }
+  }
+async function cambiarModoUso(independentMode) {
+    try {
+      await Sesion.cambiarModo(independentMode);
+      // Actualizar cache local
+      const p = Sesion.perfilCache();
+      if (p) {
+        p.independentMode = independentMode;
+        localStorage.setItem('mr_perfil', JSON.stringify(p));
+      }
+      Toast.ok(independentMode
+        ? '✅ Cambiado a Modo Independiente'
+        : '✅ Cambiado a Modo Con Supervisión'
+      );
+      await pintarPerfil();
+      // Recargar navegación para actualizar menú
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (e) { Toast.err(e.message); }
+  }
 </script>
 
 

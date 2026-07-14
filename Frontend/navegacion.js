@@ -2,34 +2,57 @@
 
 let _alarmaGlobalInterval = null;
 
+let _alarmaGlobalInterval = null;
+let _logsCache = [];
+let _sonidoCache = true;
+window._omitidosGlobal = new Set(
+  JSON.parse(sessionStorage.getItem('mr_omitidos') || '[]')
+);
+let _omitidosGlobal = window._omitidosGlobal;
+
+async function _cargarLogsGlobal() {
+  try {
+    const ajustes = await Ajustes.obtener();
+    _sonidoCache = ajustes.soundEnabled ?? true;
+    const logs = await Registros.obtenerTodos({ days: 1 });
+    const hoy  = new Date().toISOString().split('T')[0];
+    _logsCache = logs.filter(l => l.date === hoy);
+  } catch { /* silencioso */ }
+}
+
+function _verificarAlarmaGlobal() {
+  if (!_sonidoCache) return;
+  const ahora = new Date();
+  const hoy   = ahora.toISOString().split('T')[0];
+  const hora  = ahora.toLocaleTimeString('es-ES', {
+    hour: '2-digit', minute: '2-digit', hour12: false
+  });
+  const pendiente = _logsCache.find(l =>
+    l.status === 'pending' &&
+    l.date === hoy &&
+    l.scheduledTime <= hora &&
+    !_omitidosGlobal.has(l.id)
+  );
+  if (pendiente) reproducirAlarma();
+}
+
 async function iniciarAlarmaGlobal() {
   const token = Sesion.obtenerToken();
   if (!token) return;
   const perfil = Sesion.perfilCache();
   if (!perfil || perfil.role === 'caregiver') return;
 
-  async function verificar() {
-    try {
-      const ajustes = await Ajustes.obtener();
-      if (!ajustes.soundEnabled) return;
-      const logs = await Registros.obtenerTodos({ days: 1 });
-      const ahora = new Date();
-      const hoy   = ahora.toISOString().split('T')[0];
-      const hora  = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
-      const pendiente = logs.find(l =>
-        l.status === 'pending' && l.date === hoy && l.scheduledTime <= hora
-      );
-      if (pendiente) reproducirAlarma();
-    } catch { /* silencioso */ }
-  }
+  // Cargar logs inmediatamente
+  await _cargarLogsGlobal();
+  // Verificar inmediatamente
+  _verificarAlarmaGlobal();
 
-  verificar();
-  _alarmaGlobalInterval = setInterval(verificar, 60000);
+  // Verificar cada 20 segundos (sin llamada a API)
+  if (_alarmaGlobalInterval) clearInterval(_alarmaGlobalInterval);
+  _alarmaGlobalInterval = setInterval(_verificarAlarmaGlobal, 20000);
 
-if (paginaActual !== 'recordatorios') {
-    iniciarAlarmaGlobal();
-  }
-
+  // Recargar logs desde API cada 3 minutos
+  setInterval(_cargarLogsGlobal, 180000);
 }
 
 async function inyectarNavegacion(paginaActual) {

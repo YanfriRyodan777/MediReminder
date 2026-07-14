@@ -35,6 +35,27 @@
 <main>
 
   <!-- Hero -->
+
+  <!-- Navbar landing -->
+  <nav style="position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #ede9fe;padding:.875rem 2rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 8px rgba(124,58,237,.08)">
+    <div style="display:flex;align-items:center;gap:.625rem">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:10px;display:flex;align-items:center;justify-content:center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>
+        </svg>
+      </div>
+      <span style="font-weight:800;font-size:1.1rem;color:#7c3aed">MiPastilla</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:1.5rem">
+      <a href="#features" style="color:#475569;font-size:.9rem;font-weight:600;text-decoration:none">Características</a>
+      <a href="#roles" style="color:#475569;font-size:.9rem;font-weight:600;text-decoration:none">Cómo funciona</a>
+      <a href="/inicio.html" style="color:#475569;font-size:.9rem;font-weight:600;text-decoration:none">Iniciar Sesión</a>
+      <a href="/inicio.html" onclick="localStorage.setItem('mr_modo','registro')"
+        style="background:#7c3aed;color:#fff;padding:.5rem 1.25rem;border-radius:10px;font-weight:700;font-size:.9rem;text-decoration:none">
+        Comenzar gratis
+      </a>
+    </div>
+  </nav>
   <section class="landing-hero">
     <div class="landing-logo">
       <div class="landing-logo-icon" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">
@@ -81,36 +102,60 @@
     </div>
 
     <!-- Features -->
-    <div class="landing-features">
+    <div class="landing-features" id="features">
       <div class="feature-card">
-        <div class="feature-icon">🔔</div>
+        <div style="width:52px;height:52px;background:#ede9fe;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:.875rem">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
         <div class="feature-title">Alertas Inteligentes</div>
         <div class="feature-desc">Sonido y aviso visual en cualquier parte de la app cuando sea hora de tu medicina.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">👨‍👩‍👧</div>
+        <div style="width:52px;height:52px;background:#fce7f3;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:.875rem">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+        </div>
         <div class="feature-title">Seguimiento Familiar</div>
         <div class="feature-desc">El cuidador ve el historial y adherencia del paciente en tiempo real.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">📊</div>
+        <div style="width:52px;height:52px;background:#d1fae5;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:.875rem">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
         <div class="feature-title">Reportes Médicos</div>
         <div class="feature-desc">Exporta historial en PDF, TXT o CSV para compartir con tu médico.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">📅</div>
-        <div class="feature-title">Programación Flexible</div>
-        <div class="feature-desc">Programa medicamentos para hoy, mañana o cualquier fecha futura.</div>
+        <div style="width:52px;height:52px;background:#dbeafe;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:.875rem">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="feature-title">Seguimiento de Adherencia</div>
+        <div class="feature-desc">Gráficas y estadísticas detalladas de tu cumplimiento del tratamiento.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🎨</div>
-        <div class="feature-title">Personalizable</div>
-        <div class="feature-desc">Temas de color, modo oscuro y configuración de notificaciones a tu gusto.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔒</div>
+        <div style="width:52px;height:52px;background:#dcfce7;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:.875rem">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
         <div class="feature-title">Seguro y Privado</div>
-        <div class="feature-desc">Datos cifrados con JWT y almacenados en Supabase con políticas de seguridad.</div>
+        <div class="feature-desc">Datos cifrados con JWT y almacenados con políticas de seguridad avanzadas.</div>
+      </div>
+      <div class="feature-card">
+        <div style="width:52px;height:52px;background:#ffedd5;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:.875rem">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round">
+            <rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>
+          </svg>
+        </div>
+        <div class="feature-title">Funciona en Todo</div>
+        <div class="feature-desc">Accede desde celular, tablet o PC. Instálala como app desde tu navegador.</div>
       </div>
     </div>
   </section>
