@@ -179,7 +179,8 @@
   (function() {
     const p = localStorage.getItem('mr_perfil');
     const t = localStorage.getItem('mr_token');
-    if (p && t) {
+    // Solo redirigir si viene de un link interno (no si abrió la landing directamente)
+    if (p && t && document.referrer && !document.referrer.includes('/landing')) {
       const perfil = JSON.parse(p);
       window.location.href = perfil.role === 'caregiver' ? '/monitoreo.html' : '/recordatorios.html';
     }

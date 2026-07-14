@@ -40,18 +40,6 @@
 
 
 
-<!-- ── Cambiar modo (solo pacientes) ─────────────── -->
-    <div id="card-modo" class="card" style="display:none">
-      <h2 style="font-size:1rem;font-weight:900;margin-bottom:.5rem">🔄 Cambiar Modo</h2>
-      <p style="font-size:.85rem;color:var(--g500);margin-bottom:1rem">
-        Modo Independiente: tú administras todo.<br/>
-        Con Supervisión: un cuidador te acompaña.
-      </p>
-      <div style="display:flex;gap:.75rem">
-        <button id="btn-modo-ind" class="btn w100" onclick="cambiarModo(true)">🧍 Independiente</button>
-        <button id="btn-modo-sup" class="btn w100" onclick="cambiarModo(false)">👥 Con Supervisión</button>
-      </div>
-    </div>
 
 <!-- ── Vincular Paciente (solo cuidadores) ───────── -->
     <div id="sec-vincular" class="card" style="display:none">
@@ -337,14 +325,7 @@
 
 const secVincular = document.getElementById('sec-vincular');
     if (secVincular) secVincular.style.display = !esPac ? 'block' : 'none';
-async function cambiarModo(independentMode) {
-    try {
-      await Sesion.cambiarModo(independentMode);
-      Toast.ok(independentMode ? 'Cambiado a Modo Independiente' : 'Cambiado a Modo Supervisión');
-      await pintarPerfil();
-      setTimeout(() => window.location.reload(), 1500);
-    } catch (e) { Toast.err(e.message); }
-  }
+
 
   // Mostrar card de modo solo para pacientes
     const cardModo = document.getElementById('card-modo');

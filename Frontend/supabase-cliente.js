@@ -254,6 +254,8 @@ function aplicarTema(id) {
   if (localStorage.getItem('mr_oscuro') === '1') {
     document.body.classList.add('oscuro');
   }
+  // Despertar backend al cargar cualquier página
+  fetch(BACKEND_URL + '/health').catch(() => {});
 })();
 
 // ══════════════════════════════════════════════════════════════
