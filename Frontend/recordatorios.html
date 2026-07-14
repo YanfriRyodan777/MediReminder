@@ -109,6 +109,9 @@
   let meds = [], logs = [], sonidoActivo = true;
   let logAlerta = null;
   const pospuestos = new Set();
+  const omitidosSession = new Set(
+    JSON.parse(sessionStorage.getItem('mr_omitidos') || '[]')
+  );
   const timers = new Map();
 
   (async () => {
@@ -147,7 +150,7 @@
   function renderizar() {
     const hoy = Fecha.hoy();
     const deHoy = logs.filter(l => l.date === hoy);
-    const pendientes = deHoy.filter(l => l.status === 'pending' && !pospuestos.has(l.id));
+    const pendientes = deHoy.filter(l => l.status === 'pending' && !pospuestos.has(l.id) && !omitidosSession.has(l.id));
     const tomadas    = deHoy.filter(l => l.status === 'taken');
     const omitidas   = deHoy.filter(l => l.status === 'missed');
     const completadas = tomadas.length + omitidas.length;
@@ -216,7 +219,7 @@
     const hora  = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
     const pend  = logs.find(l =>
       l.status === 'pending' && l.date === hoy &&
-      l.scheduledTime <= hora && !pospuestos.has(l.id)
+      l.scheduledTime <= hora && !pospuestos.has(l.id) && !omitidosSession.has(l.id)
     );
     if (pend) mostrarAlerta(pend);
   }
@@ -276,9 +279,12 @@
   async function accionOmitida(id) {
     try {
       await Registros.marcarOmitido(id);
+      omitidosSession.add(id);
+      sessionStorage.setItem('mr_omitidos', JSON.stringify([...omitidosSession]));
       logs = logs.map(l => l.id === id ? { ...l, status: 'missed' } : l);
       renderizar();
     } catch (err) { Toast.err(err.message); }
+  
   }
 </script>
 

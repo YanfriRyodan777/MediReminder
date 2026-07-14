@@ -5,9 +5,9 @@
 
 /* ── Variables ──────────────────────────────────────── */
 :root {
-  --azul:          #3b82f6;
-  --azul-osc:      #2563eb;
-  --azul-cl:       #eff6ff;
+  --azul:          #7c3aed;
+  --azul-osc:      #6d28d9;
+  --azul-cl:       #ede9fe;
   --verde:         #22c55e;
   --verde-cl:      #f0fdf4;
   --rojo:          #ef4444;
@@ -428,3 +428,96 @@ body.oscuro .btn-borde  { border-color: #475569; color: var(--texto); }
     display: none;
   }
 }
+
+
+/* ── Rediseño estilo profesional ──────────────────────── */
+body {
+  background: #f8f9ff;
+}
+
+.card {
+  border: 1px solid #e8e8f0;
+  box-shadow: 0 2px 12px rgba(124,58,237,.06);
+  border-radius: 16px;
+}
+
+.btn-azul {
+  border-radius: 12px;
+  letter-spacing: .01em;
+}
+
+.navbar {
+  box-shadow: 0 1px 8px rgba(124,58,237,.08);
+}
+
+.brand-icon {
+  background: linear-gradient(135deg,#7c3aed,#a78bfa) !important;
+}
+
+.campo-input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124,58,237,.12);
+}
+
+.pend-card {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+}
+
+.pend-nombre { color: #5b21b6; }
+.pend-dosis  { color: #7c3aed; }
+.pend-hora-val { color: #5b21b6; }
+
+.log-item.pendiente { border-left-color: #7c3aed; }
+.log-icono.pendiente { background: #ede9fe; }
+
+.hora-chip {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.cal-dia.hoy {
+  background: #7c3aed;
+  border-color: #7c3aed;
+}
+
+.toggle input:checked + .toggle-track {
+  background: #7c3aed;
+}
+
+.tab.activa {
+  background: #7c3aed;
+  color: #fff;
+  border-radius: 10px;
+}
+
+.badge.b-azul {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.nav-link.ativo {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.stat-card.azul {
+  border-color: #c4b5fd;
+}
+.stat-card.azul .stat-val {
+  color: #7c3aed;
+}
+
+.alerta-info {
+  background: #ede9fe;
+}
+.alerta-med-nombre { color: #5b21b6; }
+.alerta-med-hora   { color: #7c3aed; }
+
+.modo-btn.activo   { background: #7c3aed; }
+.rol-btn.act-pac   { border-color: #7c3aed; background: #ede9fe; }
+.login-page        { background: linear-gradient(135deg,#ede9fe,#ddd6fe); }
+.logo-icon         { background: linear-gradient(135deg,#7c3aed,#a78bfa) !important; }
+.tut-header        { background: linear-gradient(135deg,#7c3aed,#a78bfa); }
+.brand-icon        { background: linear-gradient(135deg,#7c3aed,#a78bfa) !important; }
+
