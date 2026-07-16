@@ -24,6 +24,7 @@ function _guardarPospuestosGlobal() {
     JSON.stringify(Object.fromEntries(_pospuestosGlobal))
   );
 }
+window._guardarPospuestosGlobal = _guardarPospuestosGlobal;
 
 // ── Cargar logs desde API ────────────────────────────────────
 async function _cargarLogsGlobal() {

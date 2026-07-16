@@ -365,8 +365,28 @@ app.put('/api/auth/cambiar-password', autenticar, async (req, res) => {
 
 // PUT /api/auth/cambiar-modo
 app.put('/api/auth/cambiar-modo', autenticar, async (req, res) => {
-  const { independentMode } = req.body;
+  const { independentMode, caregiverPassword } = req.body;
   try {
+    // Pasar de Supervisión a Independiente requiere confirmar con la
+    // contraseña del cuidador vinculado (si es que tiene uno activo).
+    if (independentMode) {
+      const rel = await pool.query(
+        `SELECT caregiver_id FROM patient_caregiver_relationships
+         WHERE patient_id=$1 AND status='active' LIMIT 1`,
+        [req.usuario.id]
+      );
+      if (rel.rows.length) {
+        if (!caregiverPassword) {
+          return res.status(400).json({ error: 'Se requiere la contraseña del cuidador para pasar a Modo Independiente' });
+        }
+        const { rows: cRows } = await pool.query(
+          'SELECT password_hash FROM profiles WHERE id=$1',
+          [rel.rows[0].caregiver_id]
+        );
+        const ok = await bcrypt.compare(caregiverPassword, cRows[0]?.password_hash || '');
+        if (!ok) return res.status(400).json({ error: 'Contraseña de cuidador incorrecta' });
+      }
+    }
     await pool.query(
       'UPDATE profiles SET independent_mode=$1 WHERE id=$2',
       [independentMode, req.usuario.id]

@@ -108,11 +108,17 @@
 <script>
   let meds = [], logs = [], sonidoActivo = true;
   let logAlerta = null;
-  const pospuestos = new Set();
+  // Los recordatorios pospuestos se guardan en window._pospuestosGlobal (navegacion.js),
+  // así se comparten entre esta página y el resto (Configuración, Reportes, etc.)
   const omitidosSession = new Set(
     JSON.parse(sessionStorage.getItem('mr_omitidos') || '[]')
   );
   const timers = new Map();
+
+  function estaPospuesto(id) {
+    const exp = window._pospuestosGlobal && window._pospuestosGlobal.get(id);
+    return !!exp && exp > Date.now();
+  }
 
  (async () => {
     if (!await Sesion.requiereAuth()) return;
@@ -152,7 +158,7 @@
   function renderizar() {
     const hoy = Fecha.hoy();
     const deHoy = logs.filter(l => l.date === hoy);
-    const pendientes = deHoy.filter(l => l.status === 'pending' && !pospuestos.has(l.id) && !omitidosSession.has(l.id));
+    const pendientes = deHoy.filter(l => l.status === 'pending' && !estaPospuesto(l.id) && !omitidosSession.has(l.id));
     const tomadas    = deHoy.filter(l => l.status === 'taken');
     const omitidas   = deHoy.filter(l => l.status === 'missed');
     const completadas = tomadas.length + omitidas.length;
@@ -178,9 +184,9 @@
               ${med?.instructions ? `<p class="pend-instruc">${med.instructions}</p>` : ''}
             </div>
             <div class="pend-hora-box">
-              ${pospuestosHora.has(log.id) ? `
+              ${estaPospuesto(log.id) ? `
                 <p class="pend-hora-label" style="color:var(--amarillo)">Pospuesto</p>
-                <p class="pend-hora-val" style="color:var(--amarillo)">${pospuestosHora.get(log.id)}</p>
+                <p class="pend-hora-val" style="color:var(--amarillo)">${new Date(window._pospuestosGlobal.get(log.id)).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</p>
               ` : `
                 <p class="pend-hora-label">Hora</p>
                 <p class="pend-hora-val">${(() => { const [h,m] = log.scheduledTime.split(':'); const d = new Date(); d.setHours(+h,+m); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); })()}</p>
@@ -220,7 +226,7 @@
     const hora  = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
     const pend  = logs.find(l =>
       l.status === 'pending' && l.date === hoy &&
-      l.scheduledTime <= hora && !pospuestos.has(l.id) && !omitidosSession.has(l.id)
+      l.scheduledTime <= hora && !estaPospuesto(l.id) && !omitidosSession.has(l.id)
     );
     if (pend) mostrarAlerta(pend);
   }
@@ -250,23 +256,23 @@
 
   const pospuestosHora = new Map(); // guarda la nueva hora por id
 
-  function posponer(min) {
+ function posponer(min) {
     if (!logAlerta) return;
-    const id       = logAlerta.id;
-    const nuevaHora = new Date(Date.now() + min * 60000)
-      .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    pospuestos.add(id);
-    pospuestosHora.set(id, nuevaHora);
+    const id     = logAlerta.id;
+    const expira = Date.now() + min * 60000;
+    window._pospuestosGlobal.set(id, expira);
+    window._guardarPospuestosGlobal();
     ocultarAlerta();
     if (timers.has(id)) clearTimeout(timers.get(id));
     timers.set(id, setTimeout(() => {
-      pospuestos.delete(id);
-      pospuestosHora.delete(id);
+      window._pospuestosGlobal.delete(id);
+      window._guardarPospuestosGlobal();
       timers.delete(id);
       const log = logs.find(l => l.id === id);
       if (log && log.status === 'pending') mostrarAlerta(log);
     }, min * 60000));
     renderizar();
+    const nuevaHora = new Date(expira).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     Toast.info(`Pospuesto — nueva hora: ${nuevaHora}`);
   }
   async function accionTomada(id) {

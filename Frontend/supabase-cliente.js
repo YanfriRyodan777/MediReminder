@@ -110,7 +110,7 @@ const Sesion = {
   },
   cambiarPassword: (passwordActual, nuevaPassword) =>
     api('PUT', '/api/auth/cambiar-password', { passwordActual, nuevaPassword }),
-  cambiarModo: (independentMode) => api('PUT', '/api/auth/cambiar-modo', { independentMode }),
+ cambiarModo: (independentMode, caregiverPassword) => api('PUT', '/api/auth/cambiar-modo', { independentMode, caregiverPassword }),
 };
 
 
