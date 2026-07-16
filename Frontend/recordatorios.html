@@ -217,7 +217,7 @@
   function verificarAlertas() {
     if (logAlerta) return;
     const ahora = new Date();
-    const hoy   = ahora.toISOString().split('T')[0];
+    const hoy   = Fecha.hoy();
     const hora  = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
     const pend  = logs.find(l =>
       l.status === 'pending' && l.date === hoy &&

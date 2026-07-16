@@ -32,6 +32,19 @@ pool.on('error', (err) => {
   console.error('❌ Error inesperado en el pool:', err.message);
 });
 
+function hoyLima() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+}
+function haceDiasLima(dias) {
+  const [y, m, d] = hoyLima().split('-').map(Number);
+  const base = new Date(y, m - 1, d);
+  base.setDate(base.getDate() - dias);
+  const yy = base.getFullYear();
+  const mm = String(base.getMonth() + 1).padStart(2, '0');
+  const dd = String(base.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
 // Verificar conexión al arrancar
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
@@ -810,7 +823,7 @@ app.put('/api/ajustes', autenticar, async (req, res) => {
 //  FUNCIÓN AUXILIAR — Generar registros del día
 // ══════════════════════════════════════════════════════════
 async function generarRegistrosHoy(userId) {
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = hoyLima();
   const { rows: meds } = await pool.query(
     `SELECT id, schedule_times FROM medicines
      WHERE user_id=$1 AND status='active'
@@ -858,10 +871,7 @@ cron.schedule('0 8 * * 1', async () => {
     );
     for (const u of users) {
       try {
-        const hace7 = new Date();
-        hace7.setDate(hace7.getDate() - 7);
-        const fechaInicio = hace7.toISOString().split('T')[0];
-
+        const fechaInicio = haceDiasLima(7);
         const { rows: logs } = await pool.query(
           `SELECT ml.status FROM medicine_logs ml
            WHERE ml.user_id=$1

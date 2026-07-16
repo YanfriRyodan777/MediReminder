@@ -17,7 +17,7 @@ async function _cargarLogsGlobal() {
     const ajustes = await Ajustes.obtener();
     _sonidoCache  = ajustes.soundEnabled ?? true;
     const logs    = await Registros.obtenerTodos({ days: 1 });
-    const hoy     = new Date().toISOString().split('T')[0];
+    const hoy     = Fecha.hoy();
     _logsCache    = logs.filter(l => l.date === hoy);
   } catch { /* silencioso */ }
 }
@@ -26,7 +26,7 @@ async function _cargarLogsGlobal() {
 function _verificarAlarmaGlobal() {
   if (_alarmaGlobalActiva) return; // ya hay una alerta activa
   const ahora = new Date();
-  const hoy   = ahora.toISOString().split('T')[0];
+  const hoy   = Fecha.hoy();
   const hora  = ahora.toLocaleTimeString('es-ES', {
     hour: '2-digit', minute: '2-digit', hour12: false
   });

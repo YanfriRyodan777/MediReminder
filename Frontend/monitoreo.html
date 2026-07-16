@@ -226,8 +226,8 @@
     const tot = deHoy.length;
     const adh = tot > 0 ? Math.round((tom / tot) * 100) : null;
 
-    const hace7 = new Date(); hace7.setDate(hace7.getDate() - 7);
-    const sem = logs.filter(l => l.date >= hace7.toISOString().split('T')[0] && l.status !== 'pending');
+    const hace7Str = Fecha.restar(7);
+    const sem = logs.filter(l => l.date >= hace7Str && l.status !== 'pending');
     const adhSem = sem.length > 0 ? Math.round(sem.filter(l => l.status === 'taken').length / sem.length * 100) : null;
 
     document.getElementById('s-adh-hoy').textContent  = adh !== null ? adh + '%' : '—';
@@ -249,8 +249,7 @@
     const cont = document.getElementById('historial-dias');
     cont.innerHTML = '';
     for (let i = 0; i < dias; i++) {
-      const f = new Date(); f.setDate(f.getDate() - i);
-      const fStr = f.toISOString().split('T')[0];
+const fStr = Fecha.restar(i);
       const del = logs.filter(l => l.date === fStr);
       const tom = del.filter(l => l.status === 'taken').length;
       const omi = del.filter(l => l.status === 'missed').length;
@@ -361,8 +360,7 @@
   function renderizarGraficas() {
     const etiq = [], tomV = [], omitV = [], adhV = [];
     for (let i = 29; i >= 0; i--) {
-      const f = new Date(); f.setDate(f.getDate() - i);
-      const fStr = f.toISOString().split('T')[0];
+      const fStr = Fecha.restar(i);
       const del  = logs.filter(l => l.date === fStr);
       const tom  = del.filter(l => l.status === 'taken').length;
       const omi  = del.filter(l => l.status === 'missed').length;
@@ -408,8 +406,7 @@
   function exportarTxt(dias) {
     const perfil = Sesion.perfilCache();
     const fin = Fecha.hoy();
-    const ini = new Date(); ini.setDate(ini.getDate() - dias);
-    const iniStr = ini.toISOString().split('T')[0];
+    const iniStr = Fecha.restar(dias);
     const filtrados = logs.filter(l => l.date >= iniStr && l.date <= fin);
     const tom = filtrados.filter(l => l.status === 'taken').length;
     const omi = filtrados.filter(l => l.status === 'missed').length;
@@ -418,7 +415,7 @@
 
     let txt = `REPORTE DE ADHERENCIA — MEDIREMINDER\n${'='.repeat(45)}\n\n`;
     txt += `Paciente : ${perfil?.full_name || 'N/A'}\n`;
-    txt += `Período  : ${ini.toLocaleDateString('es-ES')} → ${new Date(fin+'T00:00:00').toLocaleDateString('es-ES')}\n`;
+    txt += `Período  : ${new Date(iniStr+'T00:00:00').toLocaleDateString('es-ES')} → ${new Date(fin+'T00:00:00').toLocaleDateString('es-ES')}\n`;
     txt += `Generado : ${new Date().toLocaleString('es-ES')}\n\n`;
     txt += `RESUMEN\n${'-'.repeat(30)}\n`;
     txt += `Adherencia : ${adh}%\nTomadas : ${tom}\nOmitidas : ${omi}\nTotal : ${tot}\n\n`;
@@ -466,8 +463,7 @@
     const doc = new jsPDF();
     const perfil = Sesion.perfilCache();
     const fin = Fecha.hoy();
-    const ini = new Date(); ini.setDate(ini.getDate() - dias);
-    const iniStr = ini.toISOString().split('T')[0];
+    const iniStr = Fecha.restar(dias);
     const filtrados = logs.filter(l => l.date >= iniStr && l.date <= fin);
     const tom = filtrados.filter(l => l.status === 'taken').length;
     const omi = filtrados.filter(l => l.status === 'missed').length;
@@ -482,7 +478,7 @@
 
     doc.setFontSize(11);
     doc.text(`Paciente  : ${perfil?.full_name || 'N/A'}`, 20, 44);
-    doc.text(`Período   : ${ini.toLocaleDateString('es-ES')} → ${new Date(fin+'T00:00:00').toLocaleDateString('es-ES')}`, 20, 51);
+    doc.text(`Período   : ${new Date(iniStr+'T00:00:00').toLocaleDateString('es-ES')} → ${new Date(fin+'T00:00:00').toLocaleDateString('es-ES')}`, 20, 51);
     doc.text(`Generado  : ${new Date().toLocaleString('es-ES')}`, 20, 58);
 
     doc.setFillColor(59,130,246); doc.rect(20, 66, 170, 38, 'F');

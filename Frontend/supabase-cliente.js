@@ -17,10 +17,18 @@ const SUPABASE_ANON = 'sb_publishable_IiBeEMSHP6ai3GD722WPoQ_0ynzRvH6';
 const BACKEND_URL = 'https://medireminder-ywl9.onrender.com';
 
 // ── Cliente Supabase (solo para Auth) ─────────────────────────
-const { createClient } = supabase;
-const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON, {
-  auth: { persistSession: true, autoRefreshToken: true },
-});
+let sbClient = null;
+try {
+  const { createClient } = window.supabase || {};
+  if (typeof createClient !== 'function') {
+    throw new Error('SDK de Supabase no disponible (window.supabase es undefined)');
+  }
+  sbClient = createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { persistSession: true, autoRefreshToken: true },
+  });
+} catch (e) {
+  console.error('[MediReminder] No se pudo inicializar Supabase:', e.message);
+}
 
 // ══════════════════════════════════════════════════════════════
 //  PETICIÓN AL BACKEND (API REST con JWT)
@@ -68,7 +76,7 @@ const Sesion = {
       return datos;
     } catch { return this.perfilCache(); }
   },
-  cerrar() {
+  async cerrar() {
     const esDemo = ['demo.paciente@medireminder.app','demo.familiar@medireminder.app']
       .includes(JSON.parse(localStorage.getItem('mr_perfil') || '{}').email);
 
@@ -90,7 +98,11 @@ const Sesion = {
       sessionStorage.removeItem('mr_omitidos');
     }
 
-    sbClient.auth.signOut().finally(() => { window.location.href = '/inicio.html'; });
+    if (sbClient) {
+      sbClient.auth.signOut().finally(() => { window.location.href = '/inicio.html'; });
+    } else {
+      window.location.href = '/inicio.html';
+    }
   },
   async requiereAuth() {
     if (!this.obtenerToken()) { window.location.href = '/inicio.html'; return false; }
@@ -197,8 +209,19 @@ const Toast = {
 // ══════════════════════════════════════════════════════════════
 //  FECHA / HORA
 // ══════════════════════════════════════════════════════════════
+const ZONA_HORARIA = 'America/Lima';
+
 const Fecha = {
-  hoy:   () => new Date().toISOString().split('T')[0],
+  hoy:   () => new Date().toLocaleDateString('en-CA', { timeZone: ZONA_HORARIA }),
+  restar: (dias) => {
+    const [y, m, d] = Fecha.hoy().split('-').map(Number);
+    const base = new Date(y, m - 1, d);
+    base.setDate(base.getDate() - dias);
+    const yy = base.getFullYear();
+    const mm = String(base.getMonth() + 1).padStart(2, '0');
+    const dd = String(base.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  },
   hora:  () => new Date().toTimeString().slice(0, 5),
   larga: (s) => new Date(s + 'T00:00:00').toLocaleDateString('es-ES', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
