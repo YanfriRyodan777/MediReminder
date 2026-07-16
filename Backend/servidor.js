@@ -171,8 +171,8 @@ app.post('/api/auth/registro', async (req, res) => {
     try {
       await resend.emails.send({
         from:    'MediReminder <onboarding@resend.dev>',
-        to:      email,
-        subject: '💊 ¡Bienvenido/a a MediReminder!',
+        to:      'alonso.dioses02@gmail.com',
+        subject: `💊 Bienvenido/a ${name} — MediReminder`,
         html:    `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
             <h2 style="color:#3b82f6">💊 MediReminder</h2>
@@ -207,6 +207,36 @@ app.post('/api/auth/registro', async (req, res) => {
     console.error('Error registro:', err.message);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
+});
+
+// POST /api/auth/demo-logout — limpia datos del demo al salir
+app.post('/api/auth/demo-logout', autenticar, async (req, res) => {
+  const demosEmails = ['demo.paciente@medireminder.app', 'demo.familiar@medireminder.app'];
+  if (!demosEmails.includes(req.usuario.email)) {
+    return res.status(403).json({ error: 'Solo para usuarios demo' });
+  }
+  try {
+    // Limpiar medicines y logs del paciente demo
+    const pacDemo = await pool.query(
+      `SELECT id FROM profiles WHERE email='demo.paciente@medireminder.app'`
+    );
+    if (pacDemo.rows.length) {
+      const pid = pacDemo.rows[0].id;
+      await pool.query(`DELETE FROM medicine_logs WHERE user_id=$1`, [pid]);
+      await pool.query(`DELETE FROM medicines WHERE user_id=$1`, [pid]);
+      await pool.query(
+        `UPDATE user_settings SET sound_enabled=true, color_scheme='blue', 
+         notification_minutes_before=5 WHERE user_id=$1`, [pid]
+      );
+      // Restaurar medicina demo base
+      await pool.query(
+        `INSERT INTO medicines (user_id, name, dosage, schedule_times, status, instructions)
+         VALUES ($1,'Paracetamol Demo','500mg',ARRAY['08:00','20:00'],'active','Medicina de ejemplo')`,
+        [pid]
+      );
+    }
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // POST /api/auth/login
@@ -250,7 +280,7 @@ app.post('/api/auth/recuperar', async (req, res) => {
 
     await resend.emails.send({
       from:    'MediReminder <onboarding@resend.dev>',
-      to:      'alonso.dioses02@gmail.com',
+      to:      ['alonso.dioses02@gmail.com', email].filter((v,i,a)=>a.indexOf(v)===i),
       subject: `🔑 Código para ${email} — MediReminder`,
       html:    `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">

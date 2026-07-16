@@ -521,3 +521,11 @@ body {
 .tut-header        { background: linear-gradient(135deg,#7c3aed,#a78bfa); }
 .brand-icon        { background: linear-gradient(135deg,#7c3aed,#a78bfa) !important; }
 
+@keyframes parpadear {
+  from { background: #dc2626; }
+  to   { background: #b91c1c; }
+}
+@keyframes rebotar {
+  0%, 100% { transform: translateY(0);    }
+  50%       { transform: translateY(-12px); }
+}

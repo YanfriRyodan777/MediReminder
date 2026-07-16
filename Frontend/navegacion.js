@@ -111,6 +111,7 @@ function _mostrarAlertaGlobal(log) {
 
 function _ocultarAlertaGlobal() {
   _alarmaGlobalActiva = false;
+window._ocultarAlertaGlobal = _ocultarAlertaGlobal;
   const modal = document.getElementById('_alerta-global');
   if (modal) modal.style.display = 'none';
   if (_intervalSonidoGlobal) { clearInterval(_intervalSonidoGlobal); _intervalSonidoGlobal = null; }
@@ -233,8 +234,11 @@ async function inyectarNavegacion(paginaActual) {
       </div>
     </nav>`;
 
-  // Iniciar alarma global en TODAS las páginas incluida recordatorios
-  iniciarAlarmaGlobal();
+  // Alarma global solo en páginas que NO son recordatorios
+  // (recordatorios tiene su propio sistema más completo)
+  if (paginaActual !== 'recordatorios') {
+    iniciarAlarmaGlobal();
+  }
 }
 
 function cerrarSesion() {

@@ -114,8 +114,10 @@
   );
   const timers = new Map();
 
-  (async () => {
+ (async () => {
     if (!await Sesion.requiereAuth()) return;
+    // Limpiar alarma global si venía activa de otra página
+    if (window._ocultarAlertaGlobal) window._ocultarAlertaGlobal();
     await inyectarNavegacion('recordatorios');
     mostrarTutorial();
     actualizarReloj(); setInterval(actualizarReloj, 30000);

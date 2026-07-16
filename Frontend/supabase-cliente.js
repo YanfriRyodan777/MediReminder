@@ -69,8 +69,27 @@ const Sesion = {
     } catch { return this.perfilCache(); }
   },
   cerrar() {
+    const esDemo = ['demo.paciente@medireminder.app','demo.familiar@medireminder.app']
+      .includes(JSON.parse(localStorage.getItem('mr_perfil') || '{}').email);
+
+    // Limpiar autenticación
     localStorage.removeItem('mr_token');
     localStorage.removeItem('mr_perfil');
+
+    // Si era demo, limpiar TODO
+    if (esDemo) {
+      // Limpiar datos demo en el backend
+      try { await api('POST', '/api/auth/demo-logout', {}); } catch { /* silencioso */ }
+      localStorage.clear();
+      sessionStorage.clear();
+    } else {
+      // Limpiar configuración visual (no persiste entre usuarios)
+      localStorage.removeItem('mr_tema');
+      localStorage.removeItem('mr_oscuro');
+      localStorage.removeItem('mr_sonido');
+      sessionStorage.removeItem('mr_omitidos');
+    }
+
     sbClient.auth.signOut().finally(() => { window.location.href = '/inicio.html'; });
   },
   async requiereAuth() {
