@@ -11,6 +11,20 @@ window._omitidosGlobal = new Set(
 );
 let _omitidosGlobal = window._omitidosGlobal;
 
+// Recordatorios pospuestos: se guarda el id y la hora en que debe reaparecer,
+// así sobrevive cuando el usuario cambia de página (Configuración, Reportes, etc.)
+window._pospuestosGlobal = new Map(
+  Object.entries(JSON.parse(sessionStorage.getItem('mr_pospuestos') || '{}'))
+);
+let _pospuestosGlobal = window._pospuestosGlobal;
+
+function _guardarPospuestosGlobal() {
+  sessionStorage.setItem(
+    'mr_pospuestos',
+    JSON.stringify(Object.fromEntries(_pospuestosGlobal))
+  );
+}
+
 // ── Cargar logs desde API ────────────────────────────────────
 async function _cargarLogsGlobal() {
   try {
@@ -34,7 +48,8 @@ function _verificarAlarmaGlobal() {
     l.status === 'pending' &&
     l.date   === hoy       &&
     l.scheduledTime <= hora &&
-    !_omitidosGlobal.has(l.id)
+    !_omitidosGlobal.has(l.id) &&
+    !(_pospuestosGlobal.has(l.id) && _pospuestosGlobal.get(l.id) > Date.now())
   );
   if (pendiente) _mostrarAlertaGlobal(pendiente);
 }
@@ -140,15 +155,16 @@ async function _accionGlobal(tipo, id) {
 }
 
 function _posponerGlobal(id, min) {
-  _omitidosGlobal.add(id);
-  window._omitidosGlobal.add(id);
   _ocultarAlertaGlobal();
-  const nuevaHora = new Date(Date.now() + min * 60000)
+  const expira = Date.now() + min * 60000;
+  _pospuestosGlobal.set(id, expira);
+  _guardarPospuestosGlobal();
+  const nuevaHora = new Date(expira)
     .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   Toast.info(`Pospuesto — nueva hora: ${nuevaHora}`);
   setTimeout(() => {
-    _omitidosGlobal.delete(id);
-    window._omitidosGlobal.delete(id);
+    _pospuestosGlobal.delete(id);
+    _guardarPospuestosGlobal();
     // Forzar reverificación
     _verificarAlarmaGlobal();
   }, min * 60000);
@@ -190,11 +206,7 @@ async function inyectarNavegacion(paginaActual) {
     <a href="/monitoreo.html" class="nav-link ${paginaActual==='monitoreo'?'ativo':''}" aria-label="Reportes">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span class="nav-etiq">Reportes</span>
-    </a>` : `
-    <a href="/monitoreo.html" class="nav-link ${paginaActual==='monitoreo'?'ativo':''}" aria-label="Reportes">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span class="nav-etiq">Reportes</span>
-    </a>`}`;
+    </a>` : ''}`;
 
   const enlacesCui = `
     <a href="/monitoreo.html" class="nav-link ativo-morado ${paginaActual==='monitoreo'?'ativo-morado':''}" aria-label="Monitoreo">
