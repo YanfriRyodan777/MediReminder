@@ -20,6 +20,8 @@
     <div class="alerta-info">
       <p class="alerta-med-nombre" id="alerta-nombre">—</p>
       <p class="alerta-med-hora">Hora programada: <strong id="alerta-hora">—</strong></p>
+      <p class="alerta-med-hora" id="alerta-dosis" style="display:none"></p>
+      <p class="alerta-med-hora" id="alerta-instruc" style="display:none"></p>
     </div>
     <div class="alerta-botones">
       <button class="btn btn-verde btn-xl" onclick="confirmarTomada()" aria-label="Marcar como tomada">
@@ -235,8 +237,18 @@
 
   function mostrarAlerta(log) {
     logAlerta = log;
+    const med = meds.find(m => m.id === log.medicineId);
     document.getElementById('alerta-nombre').textContent = log.medicineName;
     document.getElementById('alerta-hora').textContent   = log.scheduledTime;
+
+    const elDosis = document.getElementById('alerta-dosis');
+    if (med?.dosage) { elDosis.textContent = `💊 Dosis: ${med.dosage}`; elDosis.style.display = 'block'; }
+    else elDosis.style.display = 'none';
+
+    const elInstruc = document.getElementById('alerta-instruc');
+    if (med?.instructions) { elInstruc.textContent = `📝 ${med.instructions}`; elInstruc.style.display = 'block'; }
+    else elInstruc.style.display = 'none';
+
     document.getElementById('alerta').style.display = 'flex';
     if (sonidoActivo) {
       reproducirAlarma();

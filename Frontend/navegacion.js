@@ -2,6 +2,7 @@
 
 let _alarmaGlobalInterval = null;
 let _logsCache            = [];
+let _medsCache             = [];
 let _sonidoCache          = true;
 let _alarmaGlobalActiva   = false;  // evita mostrar dos veces
 let _intervalSonidoGlobal = null;
@@ -26,14 +27,17 @@ function _guardarPospuestosGlobal() {
 }
 window._guardarPospuestosGlobal = _guardarPospuestosGlobal;
 
-// ── Cargar logs desde API ────────────────────────────────────
 async function _cargarLogsGlobal() {
   try {
     const ajustes = await Ajustes.obtener();
     _sonidoCache  = ajustes.soundEnabled ?? true;
-    const logs    = await Registros.obtenerTodos({ days: 1 });
+    const [logs, meds] = await Promise.all([
+      Registros.obtenerTodos({ days: 1 }),
+      Medicamentos.obtenerTodos()
+    ]);
     const hoy     = Fecha.hoy();
     _logsCache    = logs.filter(l => l.date === hoy);
+    _medsCache    = meds;
   } catch { /* silencioso */ }
 }
 
@@ -60,6 +64,7 @@ function _mostrarAlertaGlobal(log) {
   if (_alarmaGlobalActiva) return;
   _alarmaGlobalActiva = true;
 
+  const med = _medsCache.find(m => m.id === log.medicineId);
   // Crear modal si no existe
   let modal = document.getElementById('_alerta-global');
   if (!modal) {
@@ -80,6 +85,8 @@ function _mostrarAlertaGlobal(log) {
         <div style="background:#eff6ff;border-radius:12px;padding:1.25rem;margin:1rem 0">
           <p style="font-size:1.5rem;font-weight:900;color:#1e40af">${log.medicineName}</p>
           <p style="color:#3b82f6;margin-top:.25rem">Hora programada: <strong>${log.scheduledTime}</strong></p>
+          ${med?.dosage ? `<p style="color:#3b82f6;margin-top:.25rem">💊 Dosis: ${med.dosage}</p>` : ''}
+          ${med?.instructions ? `<p style="color:#3b82f6;margin-top:.25rem">📝 ${med.instructions}</p>` : ''}
         </div>
         <div style="display:flex;gap:.75rem;margin-bottom:.75rem">
           <button onclick="_accionGlobal('tomada','${log.id}')"

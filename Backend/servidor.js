@@ -184,7 +184,7 @@ app.post('/api/auth/registro', async (req, res) => {
     try {
       await resend.emails.send({
         from:    'MediReminder <onboarding@resend.dev>',
-        to:      'alonso.dioses02@gmail.com',
+        to:      email,
         subject: `💊 Bienvenido/a ${name} — MediReminder`,
         html:    `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
@@ -293,7 +293,7 @@ app.post('/api/auth/recuperar', async (req, res) => {
 
     await resend.emails.send({
       from:    'MediReminder <onboarding@resend.dev>',
-      to:      ['alonso.dioses02@gmail.com', email].filter((v,i,a)=>a.indexOf(v)===i),
+      to:      email,
       subject: `🔑 Código para ${email} — MediReminder`,
       html:    `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
