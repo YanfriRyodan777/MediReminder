@@ -7,7 +7,7 @@
   <title>MediReminder — Iniciar Sesión</title>
   <link rel="stylesheet" href="estilos.css"/>
   <link rel="manifest" href="/manifest.json"/>
-  <meta name="theme-color" content="#3b82f6"/>
+  <meta name="theme-color" content="#0d9488"/>
 </head>
 <body>
 <div id="toast-caja"></div>
@@ -21,8 +21,8 @@
         <div class="logo-icon" aria-hidden="true">💊</div>
         <span class="logo-text">MediReminder</span>
       </div>
-      <h1 style="font-size:1.5rem;font-weight:900;margin-bottom:.75rem">Tu compañero de salud personal</h1>
-      <p style="color:var(--g500);margin-bottom:2rem;font-size:1rem">
+      <h1 class="login-marca-titulo">Tu compañero de salud personal</h1>
+      <p class="login-marca-sub">
         Nunca más olvides tomar tus medicamentos. Mantén a tu familia informada y tu salud bajo control.
       </p>
       <div class="feat">
@@ -260,19 +260,20 @@ function mostrarRecuperar() {
     document.getElementById('panel-recuperar').style.display = 'none';
   }
   async function enviarCodigo() {
-    const email = document.getElementById('inp-rec-email').value.trim();
-    if (!email) return mostrarError('Ingresa tu correo');
-    try {
-      await fetch(`${BACKEND_URL}/api/auth/recuperar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      document.getElementById('paso-email-rec').style.display = 'none';
-      document.getElementById('paso-codigo-rec').style.display = 'block';
-      Toast.ok('Código enviado. Revisa tu correo.');
-    } catch { mostrarError('Error al enviar. Intenta de nuevo.'); }
-  }
+  const email = document.getElementById('inp-rec-email').value.trim();
+  if (!email) return mostrarError('Ingresa tu correo');
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/auth/recuperar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!r.ok) throw new Error();
+    document.getElementById('paso-email-rec').style.display = 'none';
+    document.getElementById('paso-codigo-rec').style.display = 'block';
+    Toast.ok('Código enviado. Revisa tu correo.');
+  } catch { mostrarError('Error al enviar. Intenta de nuevo.'); }
+}
   async function resetPassword() {
     const email   = document.getElementById('inp-rec-email').value.trim();
     const codigo  = document.getElementById('inp-rec-codigo').value.trim();

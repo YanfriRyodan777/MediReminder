@@ -232,6 +232,20 @@ const Fecha = {
 };
 
 // ══════════════════════════════════════════════════════════════
+//  ESCAPE HTML — evita XSS al insertar datos del usuario en innerHTML
+// ══════════════════════════════════════════════════════════════
+function escapeHtml(valor) {
+  if (valor === null || valor === undefined) return '';
+  return String(valor)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+window.escapeHtml = escapeHtml;
+
+// ══════════════════════════════════════════════════════════════
 //  SONIDO DE ALARMA
 // ══════════════════════════════════════════════════════════════
 function reproducirAlarma(tipoSonido) {

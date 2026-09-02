@@ -6,7 +6,7 @@
   <title>MediReminder — Administrar Medicamentos</title>
   <link rel="stylesheet" href="estilos.css"/>
   <link rel="manifest" href="/manifest.json"/>
-  <meta name="theme-color" content="#3b82f6"/>
+  <meta name="theme-color" content="#0d9488"/>
 </head>
 <body>
 <div id="toast-caja"></div>
@@ -156,26 +156,26 @@
       return;
     }
     document.getElementById('vacio-meds').style.display = 'none';
-    lista.innerHTML = medicamentos.map(m => `
-      <div class="med-card" role="article" aria-label="Medicamento ${m.name}">
+        lista.innerHTML = medicamentos.map(m => `
+      <div class="med-card" role="article" aria-label="Medicamento ${escapeHtml(m.name)}">
         <div class="med-header">
           <div style="display:flex;gap:.875rem;align-items:flex-start;flex:1">
-            ${m.imageUrl ? `<img src="${m.imageUrl}" alt="${m.name}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r-sm);border:2px solid var(--g200);flex-shrink:0"/>` : ''}
+            ${m.imageUrl ? `<img src="${escapeHtml(m.imageUrl)}" alt="${escapeHtml(m.name)}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r-sm);border:2px solid var(--g200);flex-shrink:0"/>` : ''}
             <div style="flex:1">
               <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
-                <p class="med-nombre">💊 ${m.name}</p>
+                <p class="med-nombre">💊 ${escapeHtml(m.name)}</p>
                 ${!m.active ? '<span class="badge b-gris">Inactivo</span>' : ''}
               </div>
-              <p class="med-dosis">Dosis: ${m.dosage}</p>
+              <p class="med-dosis">Dosis: ${escapeHtml(m.dosage)}</p>
               <div class="med-horarios" style="margin-top:.5rem">
-                ${(m.times||[]).map(h => `<span class="hora-chip">🕐 ${h}</span>`).join('')}
+                ${(m.times||[]).map(h => `<span class="hora-chip">🕐 ${escapeHtml(h)}</span>`).join('')}
               </div>
-              ${m.instructions ? `<p style="font-size:.82rem;color:var(--g500);margin-top:.4rem;font-style:italic">${m.instructions}</p>` : ''}
+              ${m.instructions ? `<p style="font-size:.82rem;color:var(--g500);margin-top:.4rem;font-style:italic">${escapeHtml(m.instructions)}</p>` : ''}
             </div>
           </div>
           <div class="med-actions">
-            <button class="btn-icon btn-icon-edit" onclick="editarMedicamento('${m.id}')" title="Editar" aria-label="Editar ${m.name}">✏️</button>
-            <button class="btn-icon btn-icon-del"  onclick="pedirEliminar('${m.id}','${m.name.replace(/'/g,"\\'")}')" title="Eliminar" aria-label="Eliminar ${m.name}">🗑️</button>
+            <button class="btn-icon btn-icon-edit" onclick="editarMedicamento('${m.id}')" title="Editar" aria-label="Editar ${escapeHtml(m.name)}">✏️</button>
+            <button class="btn-icon btn-icon-del"  onclick="pedirEliminar('${m.id}', decodeURIComponent('${encodeURIComponent(m.name)}'))" title="Eliminar" aria-label="Eliminar ${escapeHtml(m.name)}">🗑️</button>
           </div>
         </div>
       </div>`).join('');

@@ -132,9 +132,9 @@ function _mostrarAlertaGlobal(log) {
   }
 }
 
+window._ocultarAlertaGlobal = _ocultarAlertaGlobal;
 function _ocultarAlertaGlobal() {
   _alarmaGlobalActiva = false;
-window._ocultarAlertaGlobal = _ocultarAlertaGlobal;
   const modal = document.getElementById('_alerta-global');
   if (modal) modal.style.display = 'none';
   if (_intervalSonidoGlobal) { clearInterval(_intervalSonidoGlobal); _intervalSonidoGlobal = null; }

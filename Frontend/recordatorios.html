@@ -6,7 +6,7 @@
   <title>MediReminder — Mis Recordatorios</title>
   <link rel="stylesheet" href="estilos.css"/>
   <link rel="manifest" href="/manifest.json"/>
-  <meta name="theme-color" content="#3b82f6"/>
+  <meta name="theme-color" content="#0d9488"/>
 </head>
 <body>
 <div id="toast-caja"></div>
@@ -177,13 +177,13 @@
     document.getElementById('lista-pendientes').innerHTML = pendientes.map(log => {
       const med = meds.find(m => m.id === log.medicineId);
       return `
-        <div class="pend-card" role="article" aria-label="Medicina pendiente: ${log.medicineName}">
+        <div class="pend-card" role="article" aria-label="Medicina pendiente: ${escapeHtml(log.medicineName)}">
           <div class="pend-header">
-            ${med?.imageUrl ? `<img src="${med.imageUrl}" alt="${log.medicineName}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-sm);border:2px solid #93c5fd;flex-shrink:0"/>` : ''}
+            ${med?.imageUrl ? `<img src="${escapeHtml(med.imageUrl)}" alt="${escapeHtml(log.medicineName)}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-sm);border:2px solid #93c5fd;flex-shrink:0"/>` : ''}
             <div style="flex:1">
-              <p class="pend-nombre">${log.medicineName}</p>
-              ${med ? `<p class="pend-dosis">${med.dosage}</p>` : ''}
-              ${med?.instructions ? `<p class="pend-instruc">${med.instructions}</p>` : ''}
+              <p class="pend-nombre">${escapeHtml(log.medicineName)}</p>
+              ${med ? `<p class="pend-dosis">${escapeHtml(med.dosage)}</p>` : ''}
+              ${med?.instructions ? `<p class="pend-instruc">${escapeHtml(med.instructions)}</p>` : ''}
             </div>
             <div class="pend-hora-box">
               ${estaPospuesto(log.id) ? `
@@ -196,8 +196,8 @@
             </div>
           </div>
           <div class="pend-acciones">
-            <button class="btn btn-verde btn-lg w100" onclick="accionTomada('${log.id}')" aria-label="Marcar ${log.medicineName} como tomada">✅ Ya la tomé</button>
-            <button class="btn btn-gris btn-lg w100"  onclick="accionOmitida('${log.id}')" aria-label="Omitir ${log.medicineName}">✗ Omitir</button>
+            <button class="btn btn-verde btn-lg w100" onclick="accionTomada('${log.id}')" aria-label="Marcar ${escapeHtml(log.medicineName)} como tomada">✅ Ya la tomé</button>
+            <button class="btn btn-gris btn-lg w100"  onclick="accionOmitida('${log.id}')" aria-label="Omitir ${escapeHtml(log.medicineName)}">✗ Omitir</button>
           </div>
         </div>`;
     }).join('');
@@ -209,8 +209,8 @@
       <div class="log-item tomado" role="listitem">
         <div class="log-icono tomado">✅</div>
         <div class="log-info">
-          <p class="log-nombre">${log.medicineName}</p>
-          <p class="log-meta">Programada: ${log.scheduledTime}</p>
+          <p class="log-nombre">${escapeHtml(log.medicineName)}</p>
+          <p class="log-meta">Programada: ${escapeHtml(log.scheduledTime)}</p>
         </div>
         <div class="log-derecha">
           <p style="font-size:.75rem;color:var(--g400)">Tomada</p>
@@ -265,8 +265,6 @@
 
   async function confirmarTomada() { if (logAlerta) { await accionTomada(logAlerta.id); ocultarAlerta(); } }
   async function confirmarOmitida(){ if (logAlerta) { await accionOmitida(logAlerta.id); ocultarAlerta(); } }
-
-  const pospuestosHora = new Map(); // guarda la nueva hora por id
 
  function posponer(min) {
     if (!logAlerta) return;

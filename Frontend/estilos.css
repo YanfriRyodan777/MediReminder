@@ -5,9 +5,22 @@
 
 /* ── Variables ──────────────────────────────────────── */
 :root {
-  --azul:          #7c3aed;
-  --azul-osc:      #6d28d9;
-  --azul-cl:       #ede9fe;
+  /* Paleta principal — rediseño */
+  --primary:        #0d9488;   /* teal — paciente / acción principal */
+  --primary-dark:   #0f766e;
+  --primary-light:  #ccfbf1;
+  --secondary:      #4f46e5;   /* índigo — cuidador / monitoreo */
+  --secondary-dark: #4338ca;
+  --secondary-light:#e0e7ff;
+
+  /* Alias de compatibilidad — el resto del código usa estos nombres,
+     no los borres hasta renombrar todo el código a --primary/--secondary */
+  --azul:      var(--primary);
+  --azul-osc:  var(--primary-dark);
+  --azul-cl:   var(--primary-light);
+  --morado:    var(--secondary);
+  --morado-cl: var(--secondary-light);
+
   --verde:         #22c55e;
   --verde-cl:      #f0fdf4;
   --rojo:          #ef4444;
@@ -16,8 +29,6 @@
   --naranja-cl:    #fff7ed;
   --amarillo:      #eab308;
   --amarillo-cl:   #fefce8;
-  --morado:        #8b5cf6;
-  --morado-cl:     #f5f3ff;
   --g50:  #f8fafc; --g100: #f1f5f9; --g200: #e2e8f0;
   --g300: #cbd5e1; --g400: #94a3b8; --g500: #64748b;
   --g600: #475569; --g700: #334155; --g900: #0f172a;
@@ -28,7 +39,6 @@
   --s2: 0 12px 40px rgba(0,0,0,.14);
   --t:  .18s ease;
   --fondo: #f8fafc;
-  --blanco: #ffffff;
   --texto: #0f172a;
 }
 
@@ -88,7 +98,10 @@ img{max-width:100%;display:block}
 
 /* ── Stats ──────────────────────────────────────────── */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1rem}
-.stat-card{background:var(--blanco);border-radius:var(--r-lg);padding:1.25rem 1.5rem;border:2px solid var(--g200)}
+.stat-card{background:var(--blanco);border-radius:var(--r-lg);padding:1.25rem 1.5rem;border:2px solid var(--g200);position:relative;overflow:hidden;transition:transform var(--t)}
+.stat-card:hover{transform:translateY(-3px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:currentColor;opacity:.35}
+.stat-card.azul{color:var(--primary)}.stat-card.verde{color:var(--verde)}.stat-card.rojo{color:var(--rojo)}.stat-card.morado{color:var(--secondary)}
 .stat-label{font-size:.7rem;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.07em}
 .stat-val{font-size:2.6rem;font-weight:900;line-height:1;margin:.2rem 0}
 .stat-sub{font-size:.75rem;color:var(--g400)}
@@ -204,7 +217,7 @@ img{max-width:100%;display:block}
 /* ── Pestañas ───────────────────────────────────────── */
 .tabs{display:flex;gap:.25rem;background:var(--g100);border-radius:var(--r-sm);padding:.25rem}
 .tab{padding:.5rem 1rem;border-radius:var(--r-sm);font-size:.875rem;font-weight:800;color:var(--g500);transition:all var(--t);flex:1;text-align:center}
-.tab.activa{background:var(--blanco);color:var(--g900);box-shadow:var(--s0)}
+.tab.activa{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;box-shadow:0 4px 12px -2px rgba(13,148,136,.4)}
 
 /* ── Encabezado sección ─────────────────────────────── */
 .sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
@@ -240,13 +253,13 @@ img{max-width:100%;display:block}
 .cal-dia.futuro   {opacity:.4;cursor:not-allowed}
 
 /* ── Página Login ───────────────────────────────────── */
-.login-page{min-height:100vh;background:linear-gradient(135deg,#dbeafe,#ede9fe);display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.login-page{min-height:100vh;background:linear-gradient(135deg,#f0fdfa,#eef2ff);display:flex;align-items:center;justify-content:center;padding:1.5rem}
 .login-grid{max-width:1000px;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:2rem}
 @media(max-width:768px){.login-grid{grid-template-columns:1fr}.login-marca{display:none}}
 .login-marca{background:var(--blanco);border-radius:var(--r-lg);padding:3rem;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--s2)}
 .login-panel{background:var(--blanco);border-radius:var(--r-lg);padding:3rem;box-shadow:var(--s2)}
 .logo-fila{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
-.logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--azul),#6366f1);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.75rem}
+.logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.75rem;box-shadow:0 8px 20px -6px rgba(13,148,136,.5)}
 .logo-text{font-size:2.2rem;font-weight:900}
 .feat{display:flex;align-items:flex-start;gap:.875rem;margin-bottom:1.25rem}
 .feat-icon{width:40px;height:40px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
@@ -266,11 +279,32 @@ img{max-width:100%;display:block}
 .demo-sep{border-top:1px solid var(--g200);padding-top:1.25rem;margin-top:1.25rem}
 .demo-sep p{font-size:.8rem;color:var(--g500);margin-bottom:.6rem;font-weight:600}
 .demo-btns{display:flex;gap:.5rem}
+.login-marca{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(160deg,var(--primary-dark),var(--primary) 55%,var(--secondary));
+  color:#fff;
+}
+.login-marca::before{
+  content:'';
+  position:absolute; inset:0;
+  background-image:radial-gradient(rgba(255,255,255,.14) 1.5px, transparent 1.5px);
+  background-size:22px 22px;
+  opacity:.5;
+}
+.login-marca > *{position:relative;z-index:1}
+.login-marca h1, .login-marca p{color:#fff}
+.login-marca .feat-desc{color:rgba(255,255,255,.78)}
+.login-marca .feat-icon{background:rgba(255,255,255,.16) !important}
+.login-marca .demo-sep{border-top-color:rgba(255,255,255,.25)}
+.login-marca .demo-sep p{color:rgba(255,255,255,.85)}
+.login-marca-titulo{font-size:1.6rem;font-weight:900;margin-bottom:.75rem;line-height:1.25}
+.login-marca-sub{margin-bottom:2rem;font-size:1rem}
 
 /* ── Tutorial Onboarding ────────────────────────────── */
 .tut-fondo{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem}
 .tut-panel{background:var(--blanco);border-radius:var(--r-lg);max-width:580px;width:100%;overflow:hidden;box-shadow:var(--s2);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
-.tut-header{background:linear-gradient(135deg,var(--azul),#6366f1);color:white;padding:1.75rem 2rem;position:relative}
+.tut-header{background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;padding:1.75rem 2rem;position:relative}
 .tut-close{position:absolute;top:1rem;right:1rem;color:white;opacity:.8;font-size:1.5rem;line-height:1}
 .tut-close:hover{opacity:1}
 .tut-icon-row{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
@@ -427,105 +461,4 @@ body.oscuro .btn-borde  { border-color: #475569; color: var(--texto); }
   .navbar-brand .brand-name {
     display: none;
   }
-}
-
-
-/* ── Rediseño estilo profesional ──────────────────────── */
-body {
-  background: #f8f9ff;
-}
-
-.card {
-  border: 1px solid #e8e8f0;
-  box-shadow: 0 2px 12px rgba(124,58,237,.06);
-  border-radius: 16px;
-}
-
-.btn-azul {
-  border-radius: 12px;
-  letter-spacing: .01em;
-}
-
-.navbar {
-  box-shadow: 0 1px 8px rgba(124,58,237,.08);
-}
-
-.brand-icon {
-  background: linear-gradient(135deg,#7c3aed,#a78bfa) !important;
-}
-
-.campo-input:focus {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124,58,237,.12);
-}
-
-.pend-card {
-  border-color: #c4b5fd;
-  background: #faf5ff;
-}
-
-.pend-nombre { color: #5b21b6; }
-.pend-dosis  { color: #7c3aed; }
-.pend-hora-val { color: #5b21b6; }
-
-.log-item.pendiente { border-left-color: #7c3aed; }
-.log-icono.pendiente { background: #ede9fe; }
-
-.hora-chip {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.cal-dia.hoy {
-  background: #7c3aed;
-  border-color: #7c3aed;
-}
-
-.toggle input:checked + .toggle-track {
-  background: #7c3aed;
-}
-
-.tab.activa {
-  background: #7c3aed;
-  color: #fff;
-  border-radius: 10px;
-}
-
-.badge.b-azul {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.nav-link.ativo {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.stat-card.azul {
-  border-color: #c4b5fd;
-}
-.stat-card.azul .stat-val {
-  color: #7c3aed;
-}
-
-.alerta-info {
-  background: #ede9fe;
-}
-.alerta-med-nombre { color: #5b21b6; }
-.alerta-med-hora   { color: #7c3aed; }
-
-.modo-btn.activo   { background: #7c3aed; }
-.rol-btn.act-pac   { border-color: #7c3aed; background: #ede9fe; }
-.login-page        { background: linear-gradient(135deg,#ede9fe,#ddd6fe); }
-.logo-icon         { background: linear-gradient(135deg,#7c3aed,#a78bfa) !important; }
-.tut-header        { background: linear-gradient(135deg,#7c3aed,#a78bfa); }
-.brand-icon        { background: linear-gradient(135deg,#7c3aed,#a78bfa) !important; }
-
-@keyframes parpadear {
-  from { background: #dc2626; }
-  to   { background: #b91c1c; }
-}
-@keyframes rebotar {
-  0%, 100% { transform: translateY(0);    }
-  50%       { transform: translateY(-12px); }
 }

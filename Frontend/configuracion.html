@@ -182,9 +182,8 @@
     <!-- ── Opciones avanzadas ──────────────────────────── -->
     <div class="card">
       <h2 style="font-size:1rem;font-weight:900;margin-bottom:.875rem">🔧 Opciones Avanzadas</h2>
+
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem">
-        
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem;margin-bottom:.75rem">
         <div>
           <p style="font-weight:800">Cambiar Contraseña</p>
           <p style="font-size:.82rem;color:var(--g500)">Actualiza tu contraseña de acceso</p>
@@ -192,6 +191,7 @@
         <button class="btn btn-azul btn-sm" onclick="abrirModalPassword()">🔐 Cambiar</button>
       </div>
 
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem;margin-top:.75rem">
         <div>
           <p style="font-weight:800">Modo Oscuro</p>
           <p style="font-size:.82rem;color:var(--g500)">Cambia el tema visual de la app</p>
@@ -201,6 +201,7 @@
           <span class="toggle-track"></span>
         </label>
       </div>
+
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50);border-radius:var(--r-sm);padding:1rem;margin-top:.75rem">
         <div>
           <p style="font-weight:800">Reiniciar Tutorial de Bienvenida</p>
@@ -262,13 +263,13 @@
   let idContactoEliminar = null;
 
   const temas = [
-    { id:'blue',   nombre:'Azul Clásico',    hex:'#3b82f6' },
-    { id:'green',  nombre:'Verde Salud',      hex:'#22c55e' },
-    { id:'purple', nombre:'Púrpura Elegante', hex:'#8b5cf6' },
+    { id:'blue',   nombre:'Teal Salud',       hex:'#0d9488' },
+    { id:'green',  nombre:'Verde Bienestar',  hex:'#22c55e' },
+    { id:'purple', nombre:'Índigo Confianza', hex:'#4f46e5' },
     { id:'orange', nombre:'Naranja Energía',  hex:'#f97316' },
     { id:'rose',   nombre:'Rosa Cuidado',     hex:'#ec4899' },
   ];
-
+  
   (async () => {
     if (!await Sesion.requiereAuth()) return;
     await inyectarNavegacion('configuracion');
@@ -523,23 +524,6 @@ async function confirmarDesvincular() {
     document.body.classList.add('oscuro');
     document.getElementById('switch-oscuro').checked = true;
   }
-async function cambiarPassword() {
-    const actual     = document.getElementById('inp-pass-actual').value;
-    const nueva      = document.getElementById('inp-pass-nueva').value;
-    const confirmar  = document.getElementById('inp-pass-confirmar').value;
-    if (!actual || !nueva || !confirmar) return Toast.warn('Completa todos los campos.');
-    if (nueva !== confirmar) return Toast.warn('Las contraseñas nuevas no coinciden.');
-    if (nueva.length < 6) return Toast.warn('Mínimo 6 caracteres.');
-    try {
-      await Sesion.cambiarPassword(actual, nueva);
-      document.getElementById('inp-pass-actual').value    = '';
-      document.getElementById('inp-pass-nueva').value     = '';
-      document.getElementById('inp-pass-confirmar').value = '';
-      Toast.ok('¡Contraseña actualizada correctamente! 🔐');
-    } catch (e) { Toast.err(e.message); }
-  }
-
-
 
   function elegirSonido(tipo) {
     localStorage.setItem('mr_sonido', tipo);

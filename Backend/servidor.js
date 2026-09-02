@@ -249,8 +249,13 @@ app.post('/api/auth/demo-logout', autenticar, async (req, res) => {
       );
     }
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('Error /api/auth/demo-logout:', e.message);
+    res.status(500).json({ error: 'Error al reiniciar la cuenta demo' });
+  }
 });
+
+// POST /api/auth/login
 
 // POST /api/auth/login
 
@@ -359,9 +364,13 @@ app.put('/api/auth/cambiar-password', autenticar, async (req, res) => {
     const hash = await bcrypt.hash(nuevaPassword, 10);
     await pool.query('UPDATE profiles SET password_hash=$1 WHERE id=$2', [hash, req.usuario.id]);
     res.json({ ok: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-
+  } catch (err) {
+    console.error('Error /api/auth/cambiar-password:', err.message);
+    res.status(500).json({ error: 'Error al cambiar la contraseña' });
+  }
 });
+
+
 
 // PUT /api/auth/cambiar-modo
 app.put('/api/auth/cambiar-modo', autenticar, async (req, res) => {
@@ -387,12 +396,15 @@ app.put('/api/auth/cambiar-modo', autenticar, async (req, res) => {
         if (!ok) return res.status(400).json({ error: 'Contraseña de cuidador incorrecta' });
       }
     }
-    await pool.query(
+      await pool.query(
       'UPDATE profiles SET independent_mode=$1 WHERE id=$2',
       [independentMode, req.usuario.id]
     );
     res.json({ ok: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error('Error /api/auth/cambiar-modo:', err.message);
+    res.status(500).json({ error: 'Error al cambiar el modo de uso' });
+  }
 });
 
 
@@ -458,7 +470,8 @@ app.get('/api/auth/perfil', autenticar, async (req, res) => {
     }
     res.json(u);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error /api/auth/perfil:', err.message);
+    res.status(500).json({ error: 'Error al obtener el perfil' });
   }
 });
 
@@ -486,10 +499,14 @@ app.get('/api/medicamentos', autenticar, async (req, res) => {
 });
 
 // POST /api/medicamentos
+const HORA_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
 app.post('/api/medicamentos', autenticar, async (req, res) => {
   const { name, dosage, times = [], instructions, imageUrl, active = true, startDate } = req.body;
   if (!name || !dosage)  return res.status(400).json({ error: 'Nombre y dosis son obligatorios' });
   if (!times.length)     return res.status(400).json({ error: 'Se requiere al menos un horario' });
+  if (!times.every(t => HORA_REGEX.test(t)))
+    return res.status(400).json({ error: 'Los horarios deben tener formato HH:MM (ej. 08:00)' });
 
   // Si es cuidador, insertar la medicina para su paciente vinculado
   let targetUserId = req.usuario.id;
@@ -523,6 +540,8 @@ app.post('/api/medicamentos', autenticar, async (req, res) => {
 app.put('/api/medicamentos/:id', autenticar, async (req, res) => {
   const { id } = req.params;
   const { name, dosage, times, instructions, imageUrl, active } = req.body;
+  if (times && !times.every(t => HORA_REGEX.test(t)))
+    return res.status(400).json({ error: 'Los horarios deben tener formato HH:MM (ej. 08:00)' });
   try {
     const chk = await pool.query(
       'SELECT id FROM medicines WHERE id=$1 AND user_id=$2', [id, req.usuario.id]
@@ -747,7 +766,10 @@ app.get('/api/pacientes/buscar', autenticar, async (req, res) => {
     );
     if (!r.rows.length) return res.status(404).json({ error: 'Paciente no encontrado' });
     res.json(r.rows[0]);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('Error /api/pacientes/buscar:', e.message);
+    res.status(500).json({ error: 'Error al buscar el paciente' });
+  }
 });
 
 
@@ -762,7 +784,10 @@ app.post('/api/pacientes/vincular', autenticar, async (req, res) => {
     );
     const p = await pool.query('SELECT id, full_name, email FROM profiles WHERE id=$1', [patientId]);
     res.json({ ok: true, patient: p.rows[0] });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('Error /api/pacientes/vincular:', e.message);
+    res.status(500).json({ error: 'Error al vincular el paciente' });
+  }
 });
 
 
@@ -788,7 +813,10 @@ app.delete('/api/pacientes/desvincular', autenticar, async (req, res) => {
       [req.usuario.id]
     );
     res.json({ ok: true, mensaje: 'Paciente desvinculado y cuenta reseteada' });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('Error /api/pacientes/desvincular:', e.message);
+    res.status(500).json({ error: 'Error al desvincular al paciente' });
+  }
 });
 
 // ══════════════════════════════════════════════════════════
@@ -872,14 +900,22 @@ cron.schedule('0 0 * * *', async () => {
     const { rows: users } = await pool.query(
       `SELECT DISTINCT user_id FROM medicines WHERE status='active'`
     );
+    let ok = 0, fallidos = 0;
     for (const u of users) {
-      await generarRegistrosHoy(u.user_id);
+      try {
+        await generarRegistrosHoy(u.user_id);
+        ok++;
+      } catch (errUsuario) {
+        fallidos++;
+        console.error(`[Cron] ❌ Error con usuario ${u.user_id}:`, errUsuario.message);
+      }
     }
-    console.log(`[Cron] ✅ Registros generados para ${users.length} usuario(s)`);
+    console.log(`[Cron] ✅ Registros generados para ${ok} usuario(s)${fallidos ? `, ${fallidos} fallaron` : ''}`);
   } catch (err) {
-    console.error('[Cron] ❌ Error:', err.message);
+    console.error('[Cron] ❌ Error general:', err.message);
   }
 }, { timezone: 'America/Lima' });
+
 // ── Resumen semanal — todos los lunes a las 8am hora Lima ──
 cron.schedule('0 8 * * 1', async () => {
   console.log('[Cron] Enviando resúmenes semanales...');

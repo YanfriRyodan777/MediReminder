@@ -6,7 +6,7 @@
   <title>MediReminder — Panel de Monitoreo</title>
   <link rel="stylesheet" href="estilos.css"/>
   <link rel="manifest" href="/manifest.json"/>
-  <meta name="theme-color" content="#3b82f6"/>
+  <meta name="theme-color" content="#0d9488"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -293,8 +293,8 @@ const fStr = Fecha.restar(i);
       return `<div class="log-item ${cls}">
         <div class="log-icono ${cls}">${ico}</div>
         <div class="log-info">
-          <p class="log-nombre">${l.medicineName}</p>
-          <p class="log-meta">Programada: ${l.scheduledTime}</p>
+          <p class="log-nombre">${escapeHtml(l.medicineName)}</p>
+          <p class="log-meta">Programada: ${escapeHtml(l.scheduledTime)}</p>
         </div>
         ${l.status==='taken'&&l.takenTime ? `<div class="log-derecha"><p style="font-size:.75rem;color:var(--g400)">Tomada</p><p style="font-weight:900;color:var(--verde)">${l.takenTime}</p></div>` : ''}
       </div>`;
@@ -306,12 +306,12 @@ const fStr = Fecha.restar(i);
   function renderizarMedsActivos() {
     const activos = meds.filter(m => m.active);
     document.getElementById('lista-meds-activos').innerHTML = activos.length
-      ? activos.map(m => `
+            ? activos.map(m => `
           <div style="border:1px solid var(--g200);border-radius:var(--r-sm);padding:.875rem">
-            <p style="font-weight:800">💊 ${m.name}</p>
-            <p style="font-size:.82rem;color:var(--g500)">Dosis: ${m.dosage}</p>
+            <p style="font-weight:800">💊 ${escapeHtml(m.name)}</p>
+            <p style="font-size:.82rem;color:var(--g500)">Dosis: ${escapeHtml(m.dosage)}</p>
             <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem">
-              ${(m.times||[]).map(t => `<span class="hora-chip">${t}</span>`).join('')}
+              ${(m.times||[]).map(t => `<span class="hora-chip">${escapeHtml(t)}</span>`).join('')}
             </div>
           </div>`).join('')
       : '<p style="color:var(--g400);font-size:.85rem">No hay medicamentos activos.</p>';
