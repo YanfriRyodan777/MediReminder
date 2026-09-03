@@ -430,13 +430,14 @@ app.get('/api/paciente/datos', autenticar, async (req, res) => {
                   ORDER BY ml.scheduled_date DESC, ml.scheduled_time ASC`, [patientId])
     ]);
 
-    res.json({
+       res.json({
       patient: perfil.rows[0],
       medicines: meds.rows,
       logs: logs.rows
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error /api/paciente/datos:', err.message);
+    res.status(500).json({ error: 'Error al obtener los datos del paciente' });
   }
 });
 
