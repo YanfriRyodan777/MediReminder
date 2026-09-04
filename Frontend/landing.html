@@ -91,6 +91,47 @@
     .portal-medireminder{background:linear-gradient(180deg,#fff,var(--primary-light) 250%);text-align:center;padding-top:3.5rem}
     .mr-pitch{max-width:600px;margin:0 auto 2rem;font-size:1.05rem;color:var(--g600);line-height:1.6}
     @media(max-width:600px){.landing-nav-links a:not(.btn){display:none}}
+
+/* ── Guía de medicamentos comunes (estilo MediWiki) ── */
+.mw-section{background:#0b0f1a;padding:3.5rem 2rem}
+.mw-hero{text-align:center;max-width:600px;margin:0 auto 2rem}
+.mw-cross{font-size:3rem;color:var(--primary);text-shadow:0 0 30px rgba(13,148,136,.5);display:block;margin-bottom:.4rem}
+.mw-titulo{font-size:clamp(1.5rem,4vw,2.2rem);font-weight:900;color:#fff;margin-bottom:.75rem}
+.mw-titulo span{color:var(--primary)}
+.mw-sub{color:#94a3b8;font-size:.95rem;line-height:1.6}
+
+.mw-filtros{display:flex;gap:.5rem;overflow-x:auto;max-width:900px;margin:0 auto 2rem;padding-bottom:.3rem}
+.mw-filtro{flex-shrink:0;background:#1a2235;border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#94a3b8;padding:.5rem .9rem;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s}
+.mw-filtro:hover{border-color:var(--primary);color:var(--primary)}
+.mw-filtro.activo{background:var(--primary);border-color:var(--primary);color:#0b0f1a}
+
+.mw-grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1.25rem}
+.mw-med-card{background:#131d2e;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:1.35rem;cursor:pointer;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;animation:mwFadeUp .3s ease both}
+.mw-med-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--primary);opacity:0;transition:opacity .2s}
+.mw-med-card:hover{transform:translateY(-4px);border-color:rgba(13,148,136,.35)}
+.mw-med-card:hover::before{opacity:1}
+.mw-badge{position:absolute;top:.9rem;right:.9rem;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:.2rem .55rem;border-radius:20px;background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.08)}
+.mw-icon{width:44px;height:44px;border-radius:12px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1.25rem;margin-bottom:.9rem}
+.mw-nombre{font-weight:800;font-size:1.02rem;color:#fff;margin-bottom:.15rem}
+.mw-generico{font-size:.75rem;color:#94a3b8;font-style:italic;margin-bottom:.7rem}
+.mw-desc{font-size:.83rem;color:#94a3b8;line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+.mw-aviso{max-width:800px;margin:2rem auto 0;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.9rem 1.1rem;font-size:.85rem;color:#fbbf24}
+
+@keyframes mwFadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.mw-modal-fondo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:3000;align-items:center;justify-content:center;padding:1rem}
+.mw-modal-fondo.activo{display:flex}
+.mw-modal{background:#111827;border:1px solid rgba(255,255,255,.08);border-radius:20px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;padding:2rem;position:relative;color:#e2e8f0}
+.mw-modal-cerrar{position:absolute;top:1rem;right:1.25rem;background:none;border:none;color:#94a3b8;font-size:1.3rem;cursor:pointer}
+.mw-modal-icon{width:56px;height:56px;border-radius:14px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:.9rem}
+.mw-modal-nombre{font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:.2rem}
+.mw-modal-generico{font-size:.85rem;color:#94a3b8;margin-bottom:1.2rem}
+.mw-info-row{background:#1a2235;border-radius:10px;padding:.9rem 1.1rem;margin-bottom:.65rem}
+.mw-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8;font-weight:700;margin-bottom:.25rem}
+.mw-valor{font-size:.88rem;color:#e2e8f0;line-height:1.5}
+
+@media(max-width:600px){.mw-grid{grid-template-columns:1fr 1fr}}
   </style>
 </head>
 <body>
@@ -132,6 +173,45 @@
     </div>
     <div id="resultado-buscar-med"></div>
   </section>
+
+    <!-- ── Guía de medicamentos comunes (curada, estilo MediWiki) ── -->
+  <section class="mw-section" id="guia-medicamentos">
+    <div class="mw-hero">
+      <span class="mw-cross">✚</span>
+      <h2 class="mw-titulo">Guía de <span>Medicamentos Comunes</span></h2>
+      <p class="mw-sub">Información educativa sobre los medicamentos más usados: para qué sirven, dosis habitual y efectos secundarios.</p>
+    </div>
+
+    <div class="mw-filtros" id="mw-filtros">
+      <button class="mw-filtro activo" data-filtro="todos">Todos</button>
+      <button class="mw-filtro" data-filtro="cabeza">🧠 Cabeza</button>
+      <button class="mw-filtro" data-filtro="fiebre">🌡️ Fiebre</button>
+      <button class="mw-filtro" data-filtro="stomach">🩹 Estómago</button>
+      <button class="mw-filtro" data-filtro="corazon">❤️ Corazón</button>
+      <button class="mw-filtro" data-filtro="garganta">🫁 Garganta/Tos</button>
+      <button class="mw-filtro" data-filtro="piel">🌸 Piel/Alergias</button>
+      <button class="mw-filtro" data-filtro="diabetes">💧 Diabetes</button>
+      <button class="mw-filtro" data-filtro="antibiotico">🦠 Antibióticos</button>
+      <button class="mw-filtro" data-filtro="vitaminas">🍊 Vitaminas</button>
+    </div>
+
+    <div class="mw-grid" id="mw-grid"></div>
+
+    <div class="mw-aviso">
+      ⚠️ <strong>Aviso:</strong> Esta información es educativa. No es una recomendación médica — consulta siempre a un médico o farmacéutico antes de tomar cualquier medicamento.
+    </div>
+  </section>
+
+  <!-- Modal detalle de medicamento -->
+  <div class="mw-modal-fondo" id="mw-modal-fondo" onclick="if(event.target===this) cerrarModalMed()">
+    <div class="mw-modal">
+      <button class="mw-modal-cerrar" onclick="cerrarModalMed()">✕</button>
+      <div class="mw-modal-icon" id="mw-modal-icon"></div>
+      <h3 class="mw-modal-nombre" id="mw-modal-nombre"></h3>
+      <p class="mw-modal-generico" id="mw-modal-generico"></p>
+      <div id="mw-modal-body"></div>
+    </div>
+  </div>
 
   <!-- ── Farmacias cercanas (placeholder — se conecta después) ── -->
   <section class="portal-section" id="farmacias">
@@ -396,6 +476,103 @@
         <span class="farmacia-dist">${f.distancia < 1 ? Math.round(f.distancia*1000)+' m' : f.distancia.toFixed(2)+' km'}</span>
       </div>`).join('');
   }
+</script>
+<script>
+  const medsComunes = [
+    { name:"Paracetamol", generic:"Acetaminofén", categoria:"Analgésico", filtros:["cabeza","fiebre"], icon:"💊",
+      desc:"El analgésico más utilizado en el mundo. Alivia el dolor leve a moderado y reduce la fiebre sin irritar el estómago.",
+      usos:"Dolor de cabeza, fiebre, dolor muscular, dolor dental, gripe, resfriado.",
+      dosis:"500–1000 mg cada 4–6 horas. Máximo 4 g/día en adultos.",
+      efectos:"Bien tolerado en dosis normales. Toxicidad hepática en sobredosis.",
+      contra:"Enfermedad hepática grave, alcoholismo crónico, alergia al paracetamol." },
+    { name:"Ibuprofeno", generic:"Ibuprofeno (AINE)", categoria:"Antiinflamatorio", filtros:["cabeza","fiebre"], icon:"🔴",
+      desc:"Antiinflamatorio no esteroideo con efecto analgésico, antipirético y antiinflamatorio.",
+      usos:"Dolor muscular, artritis, fiebre, dolor menstrual, dolor dental, migraña.",
+      dosis:"400–600 mg cada 6–8 horas con alimentos. Máximo 2400 mg/día.",
+      efectos:"Irritación gástrica, náuseas, úlceras pépticas.",
+      contra:"Úlcera gástrica activa, insuficiencia renal grave, embarazo (3er trimestre)." },
+    { name:"Amoxicilina", generic:"Amoxicilina Trihidrato", categoria:"Antibiótico", filtros:["antibiotico","garganta"], icon:"🦠",
+      desc:"Antibiótico betalactámico de amplio espectro, uno de los más recetados del mundo.",
+      usos:"Faringitis, otitis, sinusitis, neumonía leve, infecciones urinarias.",
+      dosis:"500 mg cada 8 horas o 875 mg cada 12 horas por 7–10 días.",
+      efectos:"Diarrea, náuseas, exantema cutáneo, reacciones alérgicas.",
+      contra:"Alergia a penicilinas. Precaución en mononucleosis." },
+    { name:"Omeprazol", generic:"Omeprazol (IBP)", categoria:"Gastroprotector", filtros:["stomach"], icon:"🩹",
+      desc:"Inhibidor de la bomba de protones. Reduce la producción de ácido gástrico.",
+      usos:"Gastritis, úlcera gástrica, reflujo gastroesofágico.",
+      dosis:"20–40 mg una vez al día antes del desayuno.",
+      efectos:"Cefalea, diarrea o estreñimiento, déficit de B12 con uso prolongado.",
+      contra:"Hipersensibilidad a IBP. Precaución con uso prolongado." },
+    { name:"Loratadina", generic:"Loratadina", categoria:"Antihistamínico", filtros:["piel","garganta"], icon:"🌸",
+      desc:"Antihistamínico de segunda generación, no causa somnolencia significativa.",
+      usos:"Rinitis alérgica, urticaria, dermatitis alérgica.",
+      dosis:"10 mg una vez al día.",
+      efectos:"Cefalea, sequedad de boca leve.",
+      contra:"Hipersensibilidad. Precaución en insuficiencia hepática severa." },
+    { name:"Metformina", generic:"Metformina HCl", categoria:"Antidiabético", filtros:["diabetes"], icon:"💧",
+      desc:"Tratamiento de primera línea en diabetes tipo 2. Mejora la sensibilidad a la insulina.",
+      usos:"Diabetes mellitus tipo 2, prediabetes.",
+      dosis:"500 mg–1 g con las comidas, 2–3 veces al día.",
+      efectos:"Diarrea, náuseas, dolor abdominal al inicio.",
+      contra:"Insuficiencia renal, insuficiencia hepática, alcoholismo." },
+    { name:"Enalapril", generic:"Enalapril Maleato (IECA)", categoria:"Antihipertensivo", filtros:["corazon"], icon:"❤️",
+      desc:"Relaja los vasos sanguíneos, reduciendo la presión arterial y la carga del corazón.",
+      usos:"Hipertensión arterial, insuficiencia cardíaca.",
+      dosis:"5–40 mg una o dos veces al día.",
+      efectos:"Tos seca, hipotensión, hiperpotasemia.",
+      contra:"Embarazo, angioedema previo por IECA." },
+    { name:"Vitamina C", generic:"Ácido Ascórbico", categoria:"Vitamina", filtros:["vitaminas","garganta"], icon:"🍊",
+      desc:"Vitamina hidrosoluble esencial y potente antioxidante, clave en la función inmunitaria.",
+      usos:"Refuerzo inmunitario, resfriado común, deficiencia de vitamina C.",
+      dosis:"Preventiva: 500–1000 mg/día.",
+      efectos:"Diarrea con dosis altas, cálculos renales con uso crónico excesivo.",
+      contra:"Hemocromatosis, cálculos renales previos por oxalato." }
+  ];
+
+  let mwFiltroActivo = 'todos';
+  window._mwFiltrados = medsComunes;
+
+  function renderMedsComunes() {
+    const grid = document.getElementById('mw-grid');
+    const filtrados = medsComunes.filter(m => mwFiltroActivo === 'todos' || m.filtros.includes(mwFiltroActivo));
+    window._mwFiltrados = filtrados;
+    grid.innerHTML = filtrados.map((m, i) => `
+      <div class="mw-med-card" style="animation-delay:${i*0.04}s" onclick="abrirModalMed(${i})">
+        <span class="mw-badge">${escapeHtml(m.categoria)}</span>
+        <div class="mw-icon">${m.icon}</div>
+        <div class="mw-nombre">${escapeHtml(m.name)}</div>
+        <div class="mw-generico">${escapeHtml(m.generic)}</div>
+        <p class="mw-desc">${escapeHtml(m.desc)}</p>
+      </div>`).join('');
+  }
+
+  function abrirModalMed(i) {
+    const m = window._mwFiltrados[i];
+    document.getElementById('mw-modal-icon').textContent = m.icon;
+    document.getElementById('mw-modal-nombre').textContent = m.name;
+    document.getElementById('mw-modal-generico').textContent = `${m.generic} · ${m.categoria}`;
+    document.getElementById('mw-modal-body').innerHTML = `
+      <div class="mw-info-row"><div class="mw-label">Descripción</div><div class="mw-valor">${escapeHtml(m.desc)}</div></div>
+      <div class="mw-info-row"><div class="mw-label">Para qué sirve</div><div class="mw-valor">${escapeHtml(m.usos)}</div></div>
+      <div class="mw-info-row"><div class="mw-label">Dosis habitual</div><div class="mw-valor">${escapeHtml(m.dosis)}</div></div>
+      <div class="mw-info-row"><div class="mw-label">Efectos secundarios</div><div class="mw-valor">${escapeHtml(m.efectos)}</div></div>
+      <div class="mw-info-row"><div class="mw-label">Contraindicaciones</div><div class="mw-valor">${escapeHtml(m.contra)}</div></div>
+      <div class="mw-aviso" style="margin-top:1rem">⚠️ Información educativa. No reemplaza la consulta médica.</div>`;
+    document.getElementById('mw-modal-fondo').classList.add('activo');
+  }
+  function cerrarModalMed() {
+    document.getElementById('mw-modal-fondo').classList.remove('activo');
+  }
+
+  document.querySelectorAll('.mw-filtro').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mw-filtro').forEach(b => b.classList.remove('activo'));
+      btn.classList.add('activo');
+      mwFiltroActivo = btn.dataset.filtro;
+      renderMedsComunes();
+    });
+  });
+  renderMedsComunes();
 </script>
 </body>
 </html>
