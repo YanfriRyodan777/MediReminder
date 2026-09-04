@@ -587,6 +587,50 @@ app.delete('/api/medicamentos/:id', autenticar, async (req, res) => {
   }
 });
 
+app.get('/api/medicamentos/info', autenticar, async (req, res) => {
+  const nombreOriginal = (req.query.nombre || '').trim();
+  if (!nombreOriginal) return res.status(400).json({ error: 'Falta el parámetro nombre' });
+
+  const searchName = nombreOriginal.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // sin tildes
+
+  try {
+    // 1. Buscar en caché local primero
+    const cache = await pool.query(
+      'SELECT * FROM medication_info WHERE search_name=$1', [searchName]
+    );
+    if (cache.rows.length) return res.json({ ...cache.rows[0], cached: true });
+
+    // 2. Si no está, consultar CIMA
+    const r = await fetch(`https://cima.aemps.es/cima/rest/medicamentos?nombre=${encodeURIComponent(nombreOriginal)}`);
+    const data = await r.json();
+    const med = data?.resultados?.[0];
+
+    if (!med) return res.status(404).json({ error: 'No se encontró información para este medicamento', puedeAgregarManual: true });
+
+    const info = {
+      search_name: searchName,
+      display_name: med.nombre,
+      active_ingredient: med.principiosActivos?.map(p => p.nombre).join(', ') || null,
+      description: med.formaFarmaceutica?.nombre || null,
+      source: 'cima',
+      source_id: String(med.nregistro || ''),
+    };
+
+    const inserted = await pool.query(
+      `INSERT INTO medication_info (search_name, display_name, active_ingredient, description, source, source_id)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (search_name) DO UPDATE SET fetched_at=NOW()
+       RETURNING *`,
+      [info.search_name, info.display_name, info.active_ingredient, info.description, info.source, info.source_id]
+    );
+    res.json({ ...inserted.rows[0], cached: false });
+  } catch (err) {
+    console.error('Error /api/medicamentos/info:', err.message);
+    res.status(500).json({ error: 'Error al obtener información del medicamento' });
+  }
+});
+
 // ══════════════════════════════════════════════════════════
 //  RUTAS — REGISTROS DE TOMA (protegidas)
 // ══════════════════════════════════════════════════════════
