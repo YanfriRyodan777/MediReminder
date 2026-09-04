@@ -7,6 +7,8 @@
   <title>MediReminder — Tu compañero de salud personal</title>
   <link rel="stylesheet" href="estilos.css"/>
   <link rel="manifest" href="/manifest.json"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <meta name="theme-color" content="#0d9488"/>
     <style>
     .landing-nav{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--g200);padding:.875rem 2rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 8px rgba(13,148,136,.08)}
@@ -58,13 +60,43 @@
     .pulse{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--verde);margin-right:.4rem;animation:pulse 2s infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
     @media(max-width:600px){.landing-btns{flex-direction:column;align-items:center}.landing-btns .btn{width:100%;max-width:280px}.landing-nav{padding:.875rem 1rem}.landing-nav-links{gap:.75rem}.landing-nav-links a:not(.btn){display:none}}
+    .portal-hero{padding:4rem 2rem 2.5rem;text-align:center;background:radial-gradient(circle at 20% 20%,#f0fdfa 0%,transparent 45%),radial-gradient(circle at 80% 0%,#eef2ff 0%,transparent 45%),#fff}
+    .portal-titulo{font-size:clamp(1.75rem,4.5vw,3rem);font-weight:900;color:var(--g900);line-height:1.15;margin-bottom:1rem}
+    .portal-titulo span{background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .portal-sub{font-size:1.1rem;color:var(--g600);max-width:560px;margin:0 auto}
+
+    .portal-section{max-width:900px;margin:0 auto;padding:3rem 2rem;border-top:1px solid var(--g200)}
+    .portal-section-titulo{font-size:1.35rem;font-weight:900;color:var(--g900);margin-bottom:.4rem}
+    .portal-section-sub{color:var(--g500);margin-bottom:1.5rem;font-size:.95rem}
+    .portal-placeholder-nota{font-size:.82rem;color:var(--g400);margin-top:.75rem;font-style:italic}
+    .med-info-card{margin-top:1.25rem;background:var(--blanco);border:2px solid var(--primary-light);border-radius:var(--r);padding:1.25rem 1.5rem;text-align:left;max-width:500px}
+
+    .med-info-nombre{font-weight:900;font-size:1.1rem;margin-bottom:.5rem;color:var(--primary-dark)}
+    .med-info-linea{font-size:.9rem;color:var(--g600);margin-bottom:.3rem}
+    .med-info-fuente{font-size:.75rem;color:var(--g400);margin-top:.6rem;font-style:italic}
+    .med-info-error{color:var(--rojo);font-size:.9rem;margin-top:1rem}
+    .med-info-cargando{color:var(--g500);font-size:.9rem;margin-top:1rem}
+    .mapa-real{margin-top:1.25rem;height:320px;border-radius:var(--r);overflow:hidden;border:2px solid var(--g200)}
+
+    #lista-farmacias{margin-top:1rem;display:flex;flex-direction:column;gap:.5rem}
+    .farmacia-item{display:flex;justify-content:space-between;align-items:center;background:var(--g50);border-radius:var(--r-sm);padding:.75rem 1rem;font-size:.9rem}
+    .farmacia-nombre{font-weight:700;color:var(--g900)}
+    .farmacia-dist{font-weight:800;color:var(--primary-dark);white-space:nowrap;margin-left:1rem}
+
+    .med-buscador{display:flex;gap:.75rem;max-width:500px}
+    .med-buscador .input{flex:1;padding:.75rem 1rem;border:2px solid var(--g200);border-radius:var(--r-sm);font-family:inherit;font-size:.95rem}
+    .mapa-placeholder{margin-top:1rem;height:220px;border-radius:var(--r);background:var(--g100);border:2px dashed var(--g300);display:flex;align-items:center;justify-content:center;color:var(--g400);font-size:.9rem}
+    .mapa-placeholder::before{content:'Aquí se mostrará el mapa'}
+
+    .portal-medireminder{background:linear-gradient(180deg,#fff,var(--primary-light) 250%);text-align:center;padding-top:3.5rem}
+    .mr-pitch{max-width:600px;margin:0 auto 2rem;font-size:1.05rem;color:var(--g600);line-height:1.6}
+    @media(max-width:600px){.landing-nav-links a:not(.btn){display:none}}
   </style>
 </head>
 <body>
-<body>
 <main>
 
-  <!-- Navbar landing -->
+  <!-- Navbar -->
   <nav class="landing-nav">
     <div class="landing-nav-brand">
       <div class="landing-nav-icon">
@@ -72,17 +104,47 @@
           <circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>
         </svg>
       </div>
-      <span>MediReminder</span>
+      <span>Portal de Salud</span>
     </div>
     <div class="landing-nav-links">
-      <a href="#features">Características</a>
-      <a href="#roles">Cómo funciona</a>
+      <a href="#buscar-medicamento">Medicamentos</a>
+      <a href="#farmacias">Farmacias cercanas</a>
+      <a href="#medireminder">MediReminder</a>
       <a href="/inicio.html">Iniciar Sesión</a>
-      <a href="/inicio.html" class="btn btn-azul btn-sm">Comenzar gratis</a>
     </div>
   </nav>
 
-  <section class="landing-hero">
+  <!-- ── HERO: portal de información ── -->
+  <section class="portal-hero">
+    <h1 class="portal-titulo">Información de salud <span>al alcance de tu mano</span></h1>
+    <p class="portal-sub">
+      Consulta información oficial sobre medicamentos y encuentra la farmacia más cercana, gratis y sin necesidad de crear una cuenta.
+    </p>
+  </section>
+
+  <!-- ── Buscador de medicamentos (placeholder — se conecta en el siguiente paso) ── -->
+  <section class="portal-section" id="buscar-medicamento">
+    <h2 class="portal-section-titulo">🔍 Busca información de un medicamento</h2>
+    <p class="portal-section-sub">Escribe el nombre y te mostramos para qué sirve, su principio activo y presentación.</p>
+    <div class="med-buscador">
+      <input type="text" id="inp-buscar-med" placeholder="Ej. Paracetamol, Ibuprofeno..." class="input" onkeydown="if(event.key==='Enter') buscarInfoMedicamento()"/>
+      <button class="btn btn-azul" id="btn-buscar-med" onclick="buscarInfoMedicamento()">Buscar</button>
+    </div>
+    <div id="resultado-buscar-med"></div>
+  </section>
+
+  <!-- ── Farmacias cercanas (placeholder — se conecta después) ── -->
+  <section class="portal-section" id="farmacias">
+    <h2 class="portal-section-titulo">📍 Farmacias cercanas a ti</h2>
+    <p class="portal-section-sub">Usa tu ubicación para ver las farmacias en un radio de 1.5 km.</p>
+    <button class="btn btn-borde" id="btn-buscar-farmacias" onclick="buscarFarmaciasCercanas()">📍 Usar mi ubicación</button>
+    <p id="farmacias-estado" class="portal-placeholder-nota" style="display:none"></p>
+    <div id="mapa-farmacias" class="mapa-real" style="display:none"></div>
+    <div id="lista-farmacias"></div>
+  </section>
+
+  <!-- ── MediReminder: la app en sí ── -->
+  <section class="portal-section portal-medireminder" id="medireminder">
     <div class="landing-logo">
       <div class="landing-logo-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -96,12 +158,8 @@
       </div>
     </div>
 
-    <h1 class="landing-titulo">
-      Nunca más olvides<br/><span>tus medicamentos</span>
-    </h1>
-    <p class="landing-sub">
-      Sistema inteligente de recordatorio para adultos mayores y cuidadores.
-      Alertas en tiempo real, seguimiento familiar y reportes médicos.
+    <p class="mr-pitch">
+      ¿Se te olvida tomar tus medicamentos a tiempo? Con <strong>MediReminder</strong> tú, o un familiar, reciben alertas automáticas en el momento justo, llevan un historial de cumplimiento y comparten el seguimiento del tratamiento en tiempo real.
     </p>
 
     <div class="landing-btns">
@@ -109,8 +167,7 @@
       <button class="btn btn-borde btn-lg" onclick="probarDemo()">👁️ Ver demostración</button>
     </div>
 
-    <!-- Roles -->
-    <div class="landing-roles" id="roles">
+    <div class="landing-roles">
       <div class="role-card role-card-paciente">
         <div class="role-icon">🏥</div>
         <div class="role-name">Paciente</div>
@@ -123,8 +180,7 @@
       </div>
     </div>
 
-    <!-- Features -->
-    <div class="landing-features" id="features">
+    <div class="landing-features">
       <div class="feature-card">
         <div class="feature-icon-box feature-icon-teal">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -184,8 +240,8 @@
 
   <!-- Footer -->
   <footer class="landing-footer">
-    <p class="landing-footer-brand">💊 MediReminder</p>
-    <p class="landing-footer-tag">Mejorando la adherencia a tratamientos médicos</p>
+    <p class="landing-footer-brand">💊 Portal de Salud + MediReminder</p>
+    <p class="landing-footer-tag">Información de medicamentos, farmacias cercanas y seguimiento de tratamientos</p>
     <a href="/inicio.html" class="btn btn-azul">Iniciar sesión →</a>
     <p class="landing-footer-legal">
       Proyecto universitario — No reemplaza la consulta médica profesional
@@ -220,6 +276,126 @@
     navigator.serviceWorker.register('/sw.js').catch(function() {});
   }
 </script>
-</body>
+<script>
+  async function buscarInfoMedicamento() {
+    const input = document.getElementById('inp-buscar-med');
+    const cont  = document.getElementById('resultado-buscar-med');
+    const nombre = input.value.trim();
+    if (nombre.length < 3) {
+      cont.innerHTML = `<p class="med-info-error">Escribe al menos 3 letras.</p>`;
+      return;
+    }
+    cont.innerHTML = `<p class="med-info-cargando">Buscando...</p>`;
+    try {
+      const r = await fetch(`${BACKEND_URL}/api/publico/medicamento-info?nombre=${encodeURIComponent(nombre)}`);
+      const data = await r.json();
+      if (!r.ok) {
+        cont.innerHTML = `<p class="med-info-error">${escapeHtml(data.error || 'No se encontró información.')}</p>`;
+        return;
+      }
+      cont.innerHTML = `
+        <div class="med-info-card">
+          <p class="med-info-nombre">💊 ${escapeHtml(data.display_name)}</p>
+          ${data.active_ingredient ? `<p class="med-info-linea"><strong>Principio activo:</strong> ${escapeHtml(data.active_ingredient)}</p>` : ''}
+          ${data.description ? `<p class="med-info-linea"><strong>Presentación:</strong> ${escapeHtml(data.description)}</p>` : ''}
+          <p class="med-info-fuente">Fuente: CIMA (AEMPS)${data.cached ? '' : ' · recién consultado'}</p>
+        </div>`;
+    } catch (e) {
+      cont.innerHTML = `<p class="med-info-error">Error de conexión. Intenta de nuevo.</p>`;
+    }
+  }
+</script>
+<script>
+  let _mapaFarmacias = null;
+
+  function distanciaKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function buscarFarmaciasCercanas() {
+    const estado = document.getElementById('farmacias-estado');
+    const btn = document.getElementById('btn-buscar-farmacias');
+    estado.style.display = 'block';
+    estado.textContent = 'Obteniendo tu ubicación...';
+    btn.disabled = true;
+
+    if (!navigator.geolocation) {
+      estado.textContent = 'Tu navegador no soporta geolocalización.';
+      btn.disabled = false;
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude: lat, longitude: lon } = pos.coords;
+      estado.textContent = 'Buscando farmacias en un radio de 1.5 km...';
+
+      const query = `[out:json][timeout:25];node["amenity"="pharmacy"](around:1500,${lat},${lon});out body;`;
+
+      try {
+        const r = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          body: 'data=' + encodeURIComponent(query)
+        });
+        const data = await r.json();
+        const farmacias = (data.elements || [])
+          .map(f => ({
+            nombre: f.tags?.name || 'Farmacia sin nombre registrado',
+            lat: f.lat, lon: f.lon,
+            distancia: distanciaKm(lat, lon, f.lat, f.lon)
+          }))
+          .sort((a, b) => a.distancia - b.distancia);
+
+        btn.disabled = false;
+
+        if (!farmacias.length) {
+          estado.textContent = 'No se encontraron farmacias registradas en un radio de 1.5 km. Puede que existan farmacias cercanas que aún no estén mapeadas en OpenStreetMap.';
+          return;
+        }
+
+        estado.textContent = `Se encontraron ${farmacias.length} farmacia(s) cerca de ti:`;
+        mostrarMapaFarmacias(lat, lon, farmacias);
+        mostrarListaFarmacias(farmacias);
+      } catch (e) {
+        estado.textContent = 'Error al buscar farmacias. Intenta de nuevo en unos segundos.';
+        btn.disabled = false;
+      }
+    }, (err) => {
+      estado.textContent = 'No pudimos acceder a tu ubicación. Revisa los permisos de tu navegador.';
+      btn.disabled = false;
+    }, { enableHighAccuracy: true, timeout: 10000 });
+  }
+
+  function mostrarMapaFarmacias(lat, lon, farmacias) {
+    const cont = document.getElementById('mapa-farmacias');
+    cont.style.display = 'block';
+
+    if (_mapaFarmacias) { _mapaFarmacias.remove(); }
+    _mapaFarmacias = L.map('mapa-farmacias').setView([lat, lon], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(_mapaFarmacias);
+
+    L.circleMarker([lat, lon], { radius: 8, color: '#4f46e5', fillColor: '#4f46e5', fillOpacity: 0.9 })
+      .addTo(_mapaFarmacias).bindPopup('📍 Tú estás aquí');
+
+    farmacias.forEach(f => {
+      L.marker([f.lat, f.lon]).addTo(_mapaFarmacias)
+        .bindPopup(`💊 ${escapeHtml(f.nombre)}<br/>${f.distancia.toFixed(2)} km`);
+    });
+  }
+
+  function mostrarListaFarmacias(farmacias) {
+    document.getElementById('lista-farmacias').innerHTML = farmacias.slice(0, 10).map(f => `
+      <div class="farmacia-item">
+        <span class="farmacia-nombre">💊 ${escapeHtml(f.nombre)}</span>
+        <span class="farmacia-dist">${f.distancia < 1 ? Math.round(f.distancia*1000)+' m' : f.distancia.toFixed(2)+' km'}</span>
+      </div>`).join('');
+  }
+</script>
 </body>
 </html>

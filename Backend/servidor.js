@@ -87,6 +87,14 @@ app.use(rateLimit({
   message: { error: 'Demasiadas solicitudes, intenta en 15 minutos' },
 }));
 
+// Limitador específico para la ruta pública de info de medicamentos
+// (sin login, así que hay que evitar que alguien la use para scrapear CIMA a través de tu servidor)
+const limiterPublico = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: 'Demasiadas búsquedas. Intenta de nuevo en unos minutos.' }
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -476,9 +484,48 @@ app.get('/api/auth/perfil', autenticar, async (req, res) => {
   }
 });
 
-// ══════════════════════════════════════════════════════════
-//  RUTAS — MEDICAMENTOS (protegidas)
-// ══════════════════════════════════════════════════════════
+app.get('/api/publico/medicamento-info', limiterPublico, async (req, res) => {
+  const nombreOriginal = (req.query.nombre || '').trim();
+  if (!nombreOriginal || nombreOriginal.length < 3)
+    return res.status(400).json({ error: 'Escribe al menos 3 letras' });
+
+  const searchName = nombreOriginal.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  try {
+    const cache = await pool.query(
+      'SELECT * FROM medication_info WHERE search_name=$1', [searchName]
+    );
+    if (cache.rows.length) return res.json({ ...cache.rows[0], cached: true });
+
+    const r = await fetch(`https://cima.aemps.es/cima/rest/medicamentos?nombre=${encodeURIComponent(nombreOriginal)}`);
+    const data = await r.json();
+    const med = data?.resultados?.[0];
+
+    if (!med) return res.status(404).json({ error: 'No se encontró información para este medicamento' });
+
+    const info = {
+      search_name: searchName,
+      display_name: med.nombre,
+      active_ingredient: med.principiosActivos?.map(p => p.nombre).join(', ') || null,
+      description: med.formaFarmaceutica?.nombre || null,
+      source: 'cima',
+      source_id: String(med.nregistro || ''),
+    };
+
+    const inserted = await pool.query(
+      `INSERT INTO medication_info (search_name, display_name, active_ingredient, description, source, source_id)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (search_name) DO UPDATE SET fetched_at=NOW()
+       RETURNING *`,
+      [info.search_name, info.display_name, info.active_ingredient, info.description, info.source, info.source_id]
+    );
+    res.json({ ...inserted.rows[0], cached: false });
+  } catch (err) {
+    console.error('Error /api/publico/medicamento-info:', err.message);
+    res.status(500).json({ error: 'Error al obtener información del medicamento' });
+  }
+});
 
 // GET /api/medicamentos
 app.get('/api/medicamentos', autenticar, async (req, res) => {
