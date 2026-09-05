@@ -73,9 +73,13 @@
     .wiki-mapa{height:340px;border-radius:12px;overflow:hidden;border:2px solid var(--wiki-borde)}
     #lista-farmacias{display:flex;flex-direction:column;gap:.5rem;max-height:340px;overflow-y:auto}
     @media(max-width:700px){.wiki-farmacias-layout{grid-template-columns:1fr}}
-    .wiki-farmacia-item{display:flex;justify-content:space-between;background:var(--wiki-card);border:1px solid var(--wiki-borde);border-radius:10px;padding:.75rem 1rem;font-size:.88rem}
-    .wiki-farmacia-nombre{font-weight:700;color:var(--wiki-texto)}
-    .wiki-farmacia-dist{font-weight:800;color:var(--wiki-verde-osc)}
+    .wiki-farmacia-item{display:flex;justify-content:space-between;align-items:center;gap:.75rem;background:var(--wiki-card);border:1px solid var(--wiki-borde);border-radius:10px;padding:.75rem 1rem;font-size:.88rem}
+
+    .wiki-farmacia-info{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+    .wiki-farmacia-nombre{font-weight:700;color:var(--wiki-texto);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .wiki-farmacia-dist{font-weight:800;color:var(--wiki-verde-osc);font-size:.8rem}
+    .wiki-farmacia-ir{flex-shrink:0;background:var(--wiki-verde-cl);color:var(--wiki-verde-osc);font-weight:700;font-size:.78rem;padding:.4rem .7rem;border-radius:8px;white-space:nowrap;transition:background .15s}
+    .wiki-farmacia-ir:hover{background:var(--wiki-verde);color:#fff}
 
     .wiki-cta{max-width:700px;margin:0 auto;padding:3rem 2rem;text-align:center}
     .wiki-cta-texto{color:var(--wiki-texto);font-size:1.02rem;line-height:1.6}
@@ -102,13 +106,26 @@
 
     @media(max-width:600px){.wiki-nav-links a:not(:last-child){display:none}.wiki-grid{grid-template-columns:1fr 1fr}}
 
-
+    .wiki-recientes{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.9rem;max-width:500px}
+    .wiki-recientes-label{font-size:.78rem;color:var(--wiki-muted);margin-right:.2rem}
+    .wiki-chip-reciente{background:var(--wiki-card);border:1px solid var(--wiki-borde);color:var(--wiki-verde-osc);font-size:.78rem;font-weight:700;padding:.35rem .75rem;border-radius:20px;cursor:pointer;font-family:inherit}
+    .wiki-chip-reciente:hover{background:var(--wiki-verde-cl);border-color:var(--wiki-verde)}
     .wiki-buscador-wrap{position:relative;max-width:500px}
     .wiki-autocomplete{position:absolute;top:100%;left:0;right:0;background:var(--wiki-card);border:2px solid var(--wiki-borde);border-top:none;border-radius:0 0 10px 10px;max-height:220px;overflow-y:auto;z-index:50}
     .wiki-autocomplete-item{padding:.65rem 1rem;font-size:.88rem;cursor:pointer;color:var(--wiki-texto)}
     .wiki-autocomplete-item:hover{background:var(--wiki-verde-cl)}
     .wiki-resultado-enlace{display:inline-block;margin-top:.5rem;font-size:.85rem;font-weight:700;color:var(--wiki-verde-osc);text-decoration:underline}
     .wiki-ac-grupo{padding:.4rem 1rem .2rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--wiki-muted);font-weight:800;background:var(--wiki-fondo)}
+    .wiki-modal-acciones{display:flex;gap:.6rem;margin-top:1.25rem}
+
+    .wiki-modal-acciones .wiki-btn{flex:1;font-size:.82rem;padding:.65rem}
+    @media print{
+      body *{visibility:hidden}
+      .wiki-modal-fondo, .wiki-modal-fondo *{visibility:visible}
+      .wiki-modal-fondo{position:absolute;inset:0;background:#fff;padding:0}
+      .wiki-modal{box-shadow:none;max-height:none;max-width:100%}
+      .wiki-modal-cerrar, .wiki-modal-acciones{display:none}
+}
   </style>
 </head>
 <body>
@@ -146,6 +163,7 @@
       </div>
       <div id="wiki-autocomplete" class="wiki-autocomplete" style="display:none"></div>
     </div>
+    <div id="wiki-recientes" class="wiki-recientes"></div>
     <div id="resultado-buscar-med"></div>
   </section>
 
@@ -210,6 +228,10 @@
       <h3 class="wiki-modal-nombre" id="mw-modal-nombre"></h3>
       <p class="wiki-modal-generico" id="mw-modal-generico"></p>
       <div id="mw-modal-body"></div>
+      <div class="wiki-modal-acciones">
+        <button class="wiki-btn wiki-btn-borde" onclick="compartirMedicamento()">📤 Compartir</button>
+        <button class="wiki-btn wiki-btn-borde" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+      </div>
     </div>
   </div>
 
@@ -407,8 +429,11 @@
       </div>`).join('');
   }
 
+  let _medicamentoActual = null;
+
   function abrirModalMed(i) {
     const m = window._wikiFiltrados[i];
+    _medicamentoActual = m;
     document.getElementById('mw-modal-icon').textContent = m.icon;
     document.getElementById('mw-modal-nombre').textContent = m.name;
     document.getElementById('mw-modal-generico').textContent = `${m.generic} · ${m.categoria}`;
@@ -424,6 +449,29 @@
   function cerrarModalMed() {
     document.getElementById('mw-modal-fondo').classList.remove('activo');
   }
+
+  async function compartirMedicamento() {
+    if (!_medicamentoActual) return;
+    const m = _medicamentoActual;
+    const texto = `💊 ${m.name} (${m.generic})\n\n` +
+      `${m.desc}\n\n` +
+      `Dosis habitual: ${m.dosis}\n` +
+      `Efectos secundarios: ${m.efectos}\n\n` +
+      `⚠️ Información educativa, no reemplaza la consulta médica.\n` +
+      `Consulta más en: ${window.location.origin}/landing.html#guia`;
+
+    if (navigator.share) {
+      try { await navigator.share({ title: `MediWiki — ${m.name}`, text: texto }); }
+      catch (e) { /* el usuario canceló el share, no hacer nada */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(texto);
+        alert('Tu navegador no soporta compartir directamente — copiamos la información al portapapeles para que la pegues donde quieras.');
+      } catch (e) {
+        alert('No se pudo compartir ni copiar automáticamente. Copia la información manualmente.');
+      }
+    }
+  }
   document.querySelectorAll('.wiki-filtro').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.wiki-filtro').forEach(b => b.classList.remove('activo'));
@@ -436,7 +484,32 @@
 
   // ── Buscador libre (CIMA) ──
       let _acTimeout = null;
-  const inputBuscarMed = document.getElementById('inp-buscar-med');
+   const inputBuscarMed = document.getElementById('inp-buscar-med');
+
+  // ── Búsquedas recientes ──
+  function obtenerRecientes() {
+    try { return JSON.parse(localStorage.getItem('mw_recientes') || '[]'); }
+    catch { return []; }
+  }
+  function guardarReciente(nombre) {
+    let recientes = obtenerRecientes().filter(n => n.toLowerCase() !== nombre.toLowerCase());
+    recientes.unshift(nombre);
+    recientes = recientes.slice(0, 5);
+    localStorage.setItem('mw_recientes', JSON.stringify(recientes));
+    renderRecientes();
+  }
+  function renderRecientes() {
+    const cont = document.getElementById('wiki-recientes');
+    const recientes = obtenerRecientes();
+    if (!recientes.length) { cont.innerHTML = ''; return; }
+    cont.innerHTML = `<span class="wiki-recientes-label">Buscado recientemente:</span>` +
+      recientes.map(n => `<button class="wiki-chip-reciente" onclick="buscarDesdeChip('${encodeURIComponent(n)}')">${escapeHtml(n)}</button>`).join('');
+  }
+  function buscarDesdeChip(nombreCod) {
+    inputBuscarMed.value = decodeURIComponent(nombreCod);
+    buscarInfoMedicamento();
+  }
+  renderRecientes();
 
   inputBuscarMed.addEventListener('input', () => {
     clearTimeout(_acTimeout);
@@ -517,6 +590,7 @@
       const r = await fetch(url);
       const data = await r.json();
       if (!r.ok) { cont.innerHTML = `<p class="wiki-error">${escapeHtml(data.error || 'No se encontró información.')}</p>`; return; }
+      guardarReciente(data.display_name || nombre);
       const enlaceOficial = data.source_id
         ? `https://cima.aemps.es/cima/publico/detalle.html?nregistro=${encodeURIComponent(data.source_id)}`
         : `https://cima.aemps.es/cima/publico/lista.html?nombre=${encodeURIComponent(nombre)}`;
@@ -656,8 +730,13 @@
   function mostrarListaFarmacias(farmacias) {
     document.getElementById('lista-farmacias').innerHTML = farmacias.slice(0, 10).map(f => `
       <div class="wiki-farmacia-item">
-        <span class="wiki-farmacia-nombre">💊 ${escapeHtml(f.nombre)}</span>
-        <span class="wiki-farmacia-dist">${f.distancia < 1 ? Math.round(f.distancia*1000)+' m' : f.distancia.toFixed(2)+' km'}</span>
+        <div class="wiki-farmacia-info">
+          <span class="wiki-farmacia-nombre">💊 ${escapeHtml(f.nombre)}</span>
+          <span class="wiki-farmacia-dist">${f.distancia < 1 ? Math.round(f.distancia*1000)+' m' : f.distancia.toFixed(2)+' km'}</span>
+        </div>
+        <a class="wiki-farmacia-ir" href="https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lon}" target="_blank" rel="noopener">
+          🧭 Cómo llegar
+        </a>
       </div>`).join('');
   }
 </script>
