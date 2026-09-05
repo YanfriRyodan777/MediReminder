@@ -463,3 +463,16 @@ body.oscuro .btn-borde  { border-color: #475569; color: var(--texto); }
     display: none;
   }
 }
+/* ── Selector de demo (login) ── */
+.demo-selector{display:flex;gap:.75rem;margin-top:.5rem}
+.demo-role{flex:1;background:var(--g50);border:2px solid var(--g200);border-radius:var(--r-sm);padding:1rem .75rem;text-align:center;cursor:pointer;transition:transform var(--t),border-color var(--t)}
+.demo-role:hover{transform:translateY(-2px)}
+.demo-role-paciente:hover{border-color:var(--primary)}
+.demo-role-cuidador:hover{border-color:var(--secondary)}
+.demo-role-icono{font-size:1.5rem;margin-bottom:.35rem}
+.demo-role-nombre{font-weight:800;font-size:.85rem;color:var(--g900)}
+.demo-role-desc{font-size:.72rem;color:var(--g500);margin-top:.15rem}
+
+.demo-selector-sm{display:flex;gap:.5rem;margin-top:.5rem}
+.demo-role-sm{flex:1;display:flex;align-items:center;gap:.4rem;justify-content:center;background:var(--g50);border:2px solid var(--g200);border-radius:var(--r-sm);padding:.6rem .5rem;font-size:.8rem;font-weight:700;color:var(--g700);cursor:pointer;transition:border-color var(--t)}
+.demo-role-sm:hover{border-color:var(--primary)}

@@ -41,13 +41,22 @@
         <div class="feat-icon" style="background:var(--naranja-cl)">📄</div>
         <div><p class="feat-title">Reportes Médicos</p><p class="feat-desc">Exporta PDF, TXT o CSV para compartir con tu médico</p></div>
       </div>
-      <div class="demo-sep">
+        <div class="demo-sep">
         <p>Acceso rápido de demostración:</p>
-        <div class="demo-btns">
-          <button class="btn" style="flex:1;background:var(--azul-cl);color:var(--azul-osc)" onclick="loginDemo('patient')">Demo Paciente</button>
-          <button class="btn" style="flex:1;background:var(--morado-cl);color:#5b21b6"       onclick="loginDemo('caregiver')">Demo Familiar</button>
+        <div class="demo-selector">
+          <div class="demo-role demo-role-paciente" onclick="loginDemo('patient')">
+            <div class="demo-role-icono">🏥</div>
+            <div class="demo-role-nombre">Paciente</div>
+            <div class="demo-role-desc">Recibe tus alertas</div>
+          </div>
+          <div class="demo-role demo-role-cuidador" onclick="loginDemo('caregiver')">
+            <div class="demo-role-icono">👨‍⚕️</div>
+            <div class="demo-role-nombre">Cuidador</div>
+            <div class="demo-role-desc">Monitorea en tiempo real</div>
+          </div>
         </div>
       </div>
+    </section>
     </section>
 
     <!-- ── Panel derecho: Formulario ── -->
@@ -149,13 +158,12 @@
       </div>
       <div class="demo-sep">
         <p>Acceso rápido de demostración:</p>
-        <div class="demo-btns">
-          <button class="btn btn-sm" style="flex:1;background:var(--azul-cl);color:var(--azul-osc)" onclick="loginDemo('patient')">Demo Paciente</button>
-          <button class="btn btn-sm" style="flex:1;background:var(--morado-cl);color:#5b21b6" onclick="loginDemo('caregiver')">Demo Familiar</button>
+        <div class="demo-selector-sm">
+          <div class="demo-role-sm" onclick="loginDemo('patient')">🏥 Paciente</div>
+          <div class="demo-role-sm" onclick="loginDemo('caregiver')">👨‍⚕️ Cuidador</div>
         </div>
       </div>
     </section>
-
   </div>
 </main>
 
