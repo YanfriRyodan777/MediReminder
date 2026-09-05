@@ -69,8 +69,10 @@
     .wiki-aviso{margin-top:2rem;background:var(--wiki-tierra-cl);border:1px solid #eec4a8;border-radius:10px;padding:.9rem 1.1rem;font-size:.85rem;color:#8a4321}
     .wiki-nota{font-size:.85rem;color:var(--wiki-muted);margin-top:.75rem}
 
-    .wiki-mapa{margin-top:1.25rem;height:300px;border-radius:12px;overflow:hidden;border:2px solid var(--wiki-borde)}
-    #lista-farmacias{margin-top:1rem;display:flex;flex-direction:column;gap:.5rem}
+    .wiki-farmacias-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:1.25rem;margin-top:1.25rem;align-items:start}
+    .wiki-mapa{height:340px;border-radius:12px;overflow:hidden;border:2px solid var(--wiki-borde)}
+    #lista-farmacias{display:flex;flex-direction:column;gap:.5rem;max-height:340px;overflow-y:auto}
+    @media(max-width:700px){.wiki-farmacias-layout{grid-template-columns:1fr}}
     .wiki-farmacia-item{display:flex;justify-content:space-between;background:var(--wiki-card);border:1px solid var(--wiki-borde);border-radius:10px;padding:.75rem 1rem;font-size:.88rem}
     .wiki-farmacia-nombre{font-weight:700;color:var(--wiki-texto)}
     .wiki-farmacia-dist{font-weight:800;color:var(--wiki-verde-osc)}
@@ -99,6 +101,13 @@
     .wiki-valor{font-size:.87rem;color:var(--wiki-texto);line-height:1.5}
 
     @media(max-width:600px){.wiki-nav-links a:not(:last-child){display:none}.wiki-grid{grid-template-columns:1fr 1fr}}
+
+
+    .wiki-buscador-wrap{position:relative;max-width:500px}
+    .wiki-autocomplete{position:absolute;top:100%;left:0;right:0;background:var(--wiki-card);border:2px solid var(--wiki-borde);border-top:none;border-radius:0 0 10px 10px;max-height:220px;overflow-y:auto;z-index:50}
+    .wiki-autocomplete-item{padding:.65rem 1rem;font-size:.88rem;cursor:pointer;color:var(--wiki-texto)}
+    .wiki-autocomplete-item:hover{background:var(--wiki-verde-cl)}
+    .wiki-resultado-enlace{display:inline-block;margin-top:.5rem;font-size:.85rem;font-weight:700;color:var(--wiki-verde-osc);text-decoration:underline}
   </style>
 </head>
 <body>
@@ -129,9 +138,12 @@
   <section class="wiki-section" id="buscar">
     <h2 class="wiki-section-titulo">🔍 Busca cualquier medicamento</h2>
     <p class="wiki-section-sub">Consulta información oficial de la AEMPS al instante.</p>
-    <div class="wiki-buscador">
-      <input type="text" id="inp-buscar-med" placeholder="Ej. Paracetamol, Ibuprofeno..." class="wiki-input" onkeydown="if(event.key==='Enter') buscarInfoMedicamento()"/>
-      <button class="wiki-btn wiki-btn-primario" onclick="buscarInfoMedicamento()">Buscar</button>
+    <div class="wiki-buscador-wrap">
+      <div class="wiki-buscador">
+        <input type="text" id="inp-buscar-med" placeholder="Ej. Paracetamol, Ibuprofeno..." class="wiki-input" autocomplete="off"/>
+        <button class="wiki-btn wiki-btn-primario" onclick="buscarInfoMedicamento()">Buscar</button>
+      </div>
+      <div id="wiki-autocomplete" class="wiki-autocomplete" style="display:none"></div>
     </div>
     <div id="resultado-buscar-med"></div>
   </section>
@@ -152,6 +164,8 @@
       <button class="wiki-filtro" data-filtro="diabetes">💧 Diabetes</button>
       <button class="wiki-filtro" data-filtro="antibiotico">🦠 Antibióticos</button>
       <button class="wiki-filtro" data-filtro="vitaminas">🍊 Vitaminas</button>
+      <button class="wiki-filtro" data-filtro="mente">😴 Sueño/Ánimo</button>
+      <button class="wiki-filtro" data-filtro="colesterol">🩸 Colesterol</button>
     </div>
 
     <div class="wiki-grid" id="wiki-grid"></div>
@@ -167,8 +181,10 @@
     <p class="wiki-section-sub">Encuentra farmacias en un radio de 1.5 km desde tu ubicación.</p>
     <button class="wiki-btn wiki-btn-borde" id="btn-buscar-farmacias" onclick="buscarFarmaciasCercanas()">📍 Usar mi ubicación</button>
     <p id="farmacias-estado" class="wiki-nota" style="display:none"></p>
-    <div id="mapa-farmacias" class="wiki-mapa" style="display:none"></div>
-    <div id="lista-farmacias"></div>
+    <div class="wiki-farmacias-layout">
+      <div id="mapa-farmacias" class="wiki-mapa" style="display:none"></div>
+      <div id="lista-farmacias"></div>
+    </div>
   </section>
 
   <!-- CTA compacta hacia MediReminder -->
@@ -262,6 +278,115 @@
       dosis:"Preventiva: 500–1000 mg/día.",
       efectos:"Diarrea con dosis altas, cálculos renales con uso crónico excesivo.",
       contra:"Hemocromatosis, cálculos renales previos por oxalato." }
+          ,
+    { name:"Naproxeno", generic:"Naproxeno Sódico (AINE)", categoria:"Antiinflamatorio", filtros:["cabeza","fiebre"], icon:"🔴",
+      sintomas:["Dolor menstrual","Migraña","Dolor muscular"],
+      desc:"AINE de acción más prolongada que el ibuprofeno, útil cuando se necesita alivio por más horas.",
+      dosis:"220–500 mg cada 8–12 horas con alimentos.",
+      efectos:"Molestias gástricas, mareo, retención de líquidos.",
+      contra:"Úlcera activa, insuficiencia renal o hepática grave." },
+    { name:"Aspirina", generic:"Ácido Acetilsalicílico", categoria:"Analgésico/Antiagregante", filtros:["cabeza","fiebre","corazon"], icon:"💊",
+      sintomas:["Dolor leve","Fiebre","Prevención cardiovascular"],
+      desc:"En dosis altas es analgésico y antifebril; en dosis bajas se usa para prevenir coágulos.",
+      dosis:"Analgésica: 500 mg. Cardioprotectora: 75–100 mg/día (solo bajo indicación médica).",
+      efectos:"Irritación gástrica, sangrado, zumbido en los oídos con sobredosis.",
+      contra:"Menores de 16 años (riesgo de síndrome de Reye), úlcera activa, trastornos de coagulación." },
+    { name:"Diclofenaco", generic:"Diclofenaco Sódico (AINE)", categoria:"Antiinflamatorio", filtros:["cabeza"], icon:"🔴",
+      sintomas:["Dolor articular","Dolor de espalda","Inflamación muscular"],
+      desc:"Antiinflamatorio potente, disponible en tabletas, gel e inyectable.",
+      dosis:"50 mg cada 8 horas (oral) o aplicación tópica 3-4 veces al día.",
+      efectos:"Molestias gástricas, elevación de enzimas hepáticas, riesgo cardiovascular con uso prolongado.",
+      contra:"Enfermedad cardiovascular grave, úlcera activa, insuficiencia renal." },
+    { name:"Azitromicina", generic:"Azitromicina (Macrólido)", categoria:"Antibiótico", filtros:["antibiotico","garganta"], icon:"🦠",
+      sintomas:["Faringitis","Bronquitis","Infecciones de piel"],
+      desc:"Antibiótico de amplio espectro con la ventaja de dosis única diaria por pocos días.",
+      dosis:"500 mg el primer día, luego 250 mg/día por 4 días más.",
+      efectos:"Náuseas, dolor abdominal, diarrea.",
+      contra:"Alergia a macrólidos, enfermedad hepática grave, arritmias." },
+    { name:"Ciprofloxacino", generic:"Ciprofloxacino (Quinolona)", categoria:"Antibiótico", filtros:["antibiotico"], icon:"🦠",
+      sintomas:["Infección urinaria","Infección intestinal"],
+      desc:"Antibiótico de amplio espectro usado principalmente en infecciones urinarias.",
+      dosis:"250–500 mg cada 12 horas por 3–7 días según indicación.",
+      efectos:"Tendinopatía, náuseas, fotosensibilidad.",
+      contra:"Embarazo, menores en crecimiento, antecedentes de tendinitis por quinolonas." },
+    { name:"Famotidina", generic:"Famotidina (Antihistamínico H2)", categoria:"Gastroprotector", filtros:["stomach"], icon:"🩹",
+      sintomas:["Acidez estomacal","Reflujo","Gastritis leve"],
+      desc:"Reduce la acidez estomacal, alternativa al omeprazol para síntomas leves-moderados.",
+      dosis:"20–40 mg una o dos veces al día.",
+      efectos:"Dolor de cabeza, mareo, estreñimiento.",
+      contra:"Insuficiencia renal grave (requiere ajuste de dosis)." },
+    { name:"Loperamida", generic:"Loperamida", categoria:"Antidiarreico", filtros:["stomach"], icon:"🩹",
+      sintomas:["Diarrea aguda"],
+      desc:"Reduce el movimiento intestinal para controlar la diarrea aguda no infecciosa.",
+      dosis:"4 mg inicial, luego 2 mg tras cada evacuación líquida. Máximo 16 mg/día.",
+      efectos:"Estreñimiento, distensión abdominal, mareo.",
+      contra:"Diarrea con sangre o fiebre alta, colitis, niños menores de 6 años." },
+    { name:"Cetirizina", generic:"Cetirizina", categoria:"Antihistamínico", filtros:["piel","garganta"], icon:"🌸",
+      sintomas:["Alergias","Rinitis","Picazón en la piel"],
+      desc:"Antihistamínico de segunda generación, algo más sedante que la loratadina para algunas personas.",
+      dosis:"10 mg una vez al día.",
+      efectos:"Somnolencia leve, sequedad de boca, fatiga.",
+      contra:"Insuficiencia renal grave (ajustar dosis)." },
+    { name:"Salbutamol", generic:"Salbutamol (inhalador)", categoria:"Broncodilatador", filtros:["garganta"], icon:"🫁",
+      sintomas:["Asma","Dificultad para respirar","Sibilancias"],
+      desc:"Broncodilatador de acción rápida usado para aliviar crisis de asma o broncoespasmo.",
+      dosis:"1–2 inhalaciones cada 4–6 horas según necesidad (uso bajo indicación médica).",
+      efectos:"Temblor, taquicardia, nerviosismo.",
+      contra:"Arritmias no controladas. Uso excesivo requiere revisión médica del tratamiento de base." },
+    { name:"Dextrometorfano", generic:"Dextrometorfano", categoria:"Antitusivo", filtros:["garganta"], icon:"🫁",
+      sintomas:["Tos seca","Tos irritativa"],
+      desc:"Suprime el reflejo de la tos a nivel central; no trata tos con flema.",
+      dosis:"10–20 mg cada 4 horas o 30 mg cada 6-8 horas. Máximo 120 mg/día.",
+      efectos:"Somnolencia, mareo, náuseas.",
+      contra:"Uso con IMAO, tos con mucha flema (productiva), niños pequeños." },
+    { name:"Losartán", generic:"Losartán Potásico (ARA-II)", categoria:"Antihipertensivo", filtros:["corazon"], icon:"❤️",
+      sintomas:["Presión arterial alta"],
+      desc:"Relaja los vasos sanguíneos sin causar la tos seca típica de los IECA como el enalapril.",
+      dosis:"50–100 mg una vez al día.",
+      efectos:"Mareo, hiperpotasemia, fatiga.",
+      contra:"Embarazo, estenosis de la arteria renal bilateral." },
+    { name:"Atorvastatina", generic:"Atorvastatina (Estatina)", categoria:"Hipolipemiante", filtros:["colesterol","corazon"], icon:"🩸",
+      sintomas:["Colesterol alto","Prevención cardiovascular"],
+      desc:"Reduce el colesterol LDL ('malo') y ayuda a prevenir eventos cardiovasculares.",
+      dosis:"10–80 mg una vez al día, generalmente por la noche.",
+      efectos:"Dolor muscular, elevación de enzimas hepáticas.",
+      contra:"Enfermedad hepática activa, embarazo y lactancia." },
+    { name:"Levotiroxina", generic:"Levotiroxina Sódica", categoria:"Hormona Tiroidea", filtros:["corazon"], icon:"⚖️",
+      sintomas:["Hipotiroidismo","Fatiga por tiroides baja"],
+      desc:"Reemplaza la hormona tiroidea cuando la glándula tiroides no produce suficiente.",
+      dosis:"Individualizada, en ayunas, 30-60 min antes del desayuno.",
+      efectos:"Palpitaciones, insomnio y nerviosismo si la dosis es muy alta.",
+      contra:"Hipertiroidismo no tratado, infarto reciente no controlado." },
+    { name:"Insulina Glargina", generic:"Insulina Glargina", categoria:"Antidiabético", filtros:["diabetes"], icon:"💧",
+      sintomas:["Diabetes tipo 1","Diabetes tipo 2 avanzada"],
+      desc:"Insulina de acción prolongada (basal) que cubre las necesidades de todo el día en una sola aplicación.",
+      dosis:"Individualizada según control glucémico, aplicación subcutánea una vez al día.",
+      efectos:"Hipoglucemia, reacciones en el sitio de inyección.",
+      contra:"Hipoglucemia activa. Requiere ajuste y monitoreo médico constante." },
+    { name:"Alprazolam", generic:"Alprazolam (Benzodiazepina)", categoria:"Ansiolítico", filtros:["mente"], icon:"😴",
+      sintomas:["Ansiedad aguda","Crisis de pánico"],
+      desc:"Ansiolítico de acción rápida. Uso estrictamente bajo receta médica por su potencial de dependencia.",
+      dosis:"Definida exclusivamente por el médico tratante; nunca automedicarse.",
+      efectos:"Somnolencia, dependencia con uso prolongado, síndrome de abstinencia si se suspende abruptamente.",
+      contra:"Glaucoma de ángulo cerrado, miastenia gravis, antecedentes de dependencia a sustancias. Medicamento controlado — venta bajo receta retenida." },
+    { name:"Sertralina", generic:"Sertralina (ISRS)", categoria:"Antidepresivo", filtros:["mente"], icon:"😴",
+      sintomas:["Depresión","Trastorno de ansiedad"],
+      desc:"Antidepresivo de primera línea. El efecto completo tarda varias semanas en notarse; no se suspende por cuenta propia.",
+      dosis:"Definida exclusivamente por el médico tratante, inicio gradual.",
+      efectos:"Náuseas iniciales, insomnio o somnolencia, disfunción sexual.",
+      contra:"Uso conjunto con IMAO. Requiere seguimiento médico continuo." },
+    { name:"Melatonina", generic:"Melatonina", categoria:"Regulador del sueño", filtros:["mente"], icon:"😴",
+      sintomas:["Insomnio leve","Desfase de horario (jet lag)"],
+      desc:"Hormona natural que ayuda a regular el ciclo de sueño-vigilia; efecto suave comparado con sedantes.",
+      dosis:"1–5 mg, 30-60 minutos antes de dormir.",
+      efectos:"Somnolencia diurna leve, dolor de cabeza ocasional.",
+      contra:"Precaución en embarazo/lactancia y enfermedades autoinmunes." },
+    { name:"Ácido Fólico", generic:"Ácido Fólico (Vitamina B9)", categoria:"Vitamina", filtros:["vitaminas"], icon:"🍊",
+      sintomas:["Prevención de anemia","Suplementación en embarazo"],
+      desc:"Esencial en la formación de glóbulos rojos y en el desarrollo neurológico fetal durante el embarazo.",
+      dosis:"400–800 mcg/día, o según indicación en embarazo.",
+      efectos:"Muy bien tolerado; en dosis muy altas puede enmascarar déficit de B12.",
+      contra:"Ninguna relevante en dosis habituales." }
   ];
 
   let wikiFiltroActivo = 'todos';
@@ -310,23 +435,67 @@
 
   // ── Buscador libre (CIMA) ──
   async function buscarInfoMedicamento() {
-    const input = document.getElementById('inp-buscar-med');
+      let _acTimeout = null;
+  const inputBuscarMed = document.getElementById('inp-buscar-med');
+
+  inputBuscarMed.addEventListener('input', () => {
+    clearTimeout(_acTimeout);
+    const termino = inputBuscarMed.value.trim();
+    const cont = document.getElementById('wiki-autocomplete');
+    if (termino.length < 3) { cont.style.display = 'none'; return; }
+    _acTimeout = setTimeout(() => cargarSugerencias(termino), 350); // debounce
+  });
+  inputBuscarMed.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') buscarInfoMedicamento();
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.wiki-buscador-wrap')) document.getElementById('wiki-autocomplete').style.display = 'none';
+  });
+
+  async function cargarSugerencias(termino) {
+    const cont = document.getElementById('wiki-autocomplete');
+    try {
+      const r = await fetch(`${BACKEND_URL}/api/publico/medicamento-sugerencias?nombre=${encodeURIComponent(termino)}`);
+      const data = await r.json();
+      if (!r.ok || !data.length) { cont.style.display = 'none'; return; }
+      cont.innerHTML = data.map(m => `
+        <div class="wiki-autocomplete-item" onclick="seleccionarSugerencia('${encodeURIComponent(m.nombre)}')">
+          💊 ${escapeHtml(m.nombre)}
+        </div>`).join('');
+      cont.style.display = 'block';
+    } catch (e) { cont.style.display = 'none'; }
+  }
+
+  function seleccionarSugerencia(nombreCodificado) {
+    const nombre = decodeURIComponent(nombreCodificado);
+    inputBuscarMed.value = nombre;
+    document.getElementById('wiki-autocomplete').style.display = 'none';
+    buscarInfoMedicamento();
+  }
+
+  async function buscarInfoMedicamento() {
+    document.getElementById('wiki-autocomplete').style.display = 'none';
     const cont  = document.getElementById('resultado-buscar-med');
-    const nombre = input.value.trim();
+    const nombre = inputBuscarMed.value.trim();
     if (nombre.length < 3) { cont.innerHTML = `<p class="wiki-error">Escribe al menos 3 letras.</p>`; return; }
     cont.innerHTML = `<p class="wiki-cargando">Buscando...</p>`;
     try {
       const r = await fetch(`${BACKEND_URL}/api/publico/medicamento-info?nombre=${encodeURIComponent(nombre)}`);
       const data = await r.json();
       if (!r.ok) { cont.innerHTML = `<p class="wiki-error">${escapeHtml(data.error || 'No se encontró información.')}</p>`; return; }
+      const enlaceOficial = data.source_id
+        ? `https://cima.aemps.es/cima/publico/detalle.html?nregistro=${encodeURIComponent(data.source_id)}`
+        : `https://cima.aemps.es/cima/publico/lista.html?nombre=${encodeURIComponent(nombre)}`;
       cont.innerHTML = `
         <div class="wiki-resultado-card">
           <p class="wiki-resultado-nombre">💊 ${escapeHtml(data.display_name)}</p>
           ${data.active_ingredient ? `<p class="wiki-resultado-linea"><strong>Principio activo:</strong> ${escapeHtml(data.active_ingredient)}</p>` : ''}
           ${data.description ? `<p class="wiki-resultado-linea"><strong>Presentación:</strong> ${escapeHtml(data.description)}</p>` : ''}
+          <a href="${enlaceOficial}" target="_blank" rel="noopener" class="wiki-resultado-enlace">Ver ficha oficial completa (CIMA) →</a>
           <p class="wiki-resultado-fuente">Fuente: CIMA (AEMPS)${data.cached ? '' : ' · recién consultado'}</p>
         </div>`;
     } catch (e) { cont.innerHTML = `<p class="wiki-error">Error de conexión. Intenta de nuevo.</p>`; }
+  }
   }
 
   // ── Farmacias cercanas ──
@@ -346,17 +515,49 @@
     btn.disabled = true;
     if (!navigator.geolocation) { estado.textContent = 'Tu navegador no soporta geolocalización.'; btn.disabled = false; return; }
     navigator.geolocation.getCurrentPosition(async (pos) => {
+      try{
       const { latitude: lat, longitude: lon } = pos.coords;
       estado.textContent = 'Buscando farmacias en un radio de 1.5 km...';
-      const query = `[out:json][timeout:25];node["amenity"="pharmacy"](around:1500,${lat},${lon});out body;`;
-      try {
-        const r = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(query) });
-        const data = await r.json();
-        const farmacias = (data.elements || [])
-          .map(f => ({ nombre: f.tags?.name || 'Farmacia sin nombre registrado', lat: f.lat, lon: f.lon, distancia: distanciaKm(lat, lon, f.lat, f.lon) }))
-          .sort((a, b) => a.distancia - b.distancia);
+      // nwr = busca en nodos, ways (edificios) y relaciones a la vez;
+      // se incluyen ambas etiquetas porque no todo mapeador usa "amenity"
+      const query = `[out:json][timeout:25];(
+        nwr["amenity"="pharmacy"](around:1500,${lat},${lon});
+        nwr["healthcare"="pharmacy"](around:1500,${lat},${lon});
+      );out center;`;
+
+      const servidores = [
+        'https://overpass-api.de/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter'
+      ];
+
+      let data = null;
+      for (const url of servidores) {
+        try {
+          const r = await fetch(url, { method: 'POST', body: 'data=' + encodeURIComponent(query) });
+          if (r.ok) { data = await r.json(); break; }
+        } catch (e) { /* probar el siguiente servidor */ }
+      }
+      if (!data) throw new Error('sin respuesta de Overpass');
+
+      const farmacias = (data.elements || [])
+        .map(f => {
+          const flat = f.lat ?? f.center?.lat;
+          const flon = f.lon ?? f.center?.lon;
+          if (flat == null || flon == null) return null;
+          return {
+            nombre: f.tags?.name || 'Farmacia sin nombre registrado',
+            lat: flat, lon: flon,
+            distancia: distanciaKm(lat, lon, flat, flon)
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.distancia - b.distancia);
+          
         btn.disabled = false;
-        if (!farmacias.length) { estado.textContent = 'No se encontraron farmacias registradas en un radio de 1.5 km.'; return; }
+          if (!farmacias.length) {
+          estado.textContent = 'No se encontraron farmacias registradas en un radio de 1.5 km. Prueba ampliando el radio de búsqueda en una zona con más cobertura de OpenStreetMap.';
+          return;
+        }
         estado.textContent = `Se encontraron ${farmacias.length} farmacia(s) cerca de ti:`;
         mostrarMapaFarmacias(lat, lon, farmacias);
         mostrarListaFarmacias(farmacias);

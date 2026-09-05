@@ -527,6 +527,22 @@ app.get('/api/publico/medicamento-info', limiterPublico, async (req, res) => {
   }
 });
 
+app.get('/api/publico/medicamento-sugerencias', limiterPublico, async (req, res) => {
+  const nombre = (req.query.nombre || '').trim();
+  if (nombre.length < 3) return res.json([]);
+  try {
+    const r = await fetch(`https://cima.aemps.es/cima/rest/medicamentos?nombre=${encodeURIComponent(nombre)}`);
+    const data = await r.json();
+    const sugerencias = (data?.resultados || [])
+      .slice(0, 8)
+      .map(m => ({ nombre: m.nombre, nregistro: m.nregistro }));
+    res.json(sugerencias);
+  } catch (err) {
+    console.error('Error /api/publico/medicamento-sugerencias:', err.message);
+    res.json([]);
+  }
+});
+
 // GET /api/medicamentos
 app.get('/api/medicamentos', autenticar, async (req, res) => {
   try {
