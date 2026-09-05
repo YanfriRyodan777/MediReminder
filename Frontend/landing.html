@@ -108,6 +108,7 @@
     .wiki-autocomplete-item{padding:.65rem 1rem;font-size:.88rem;cursor:pointer;color:var(--wiki-texto)}
     .wiki-autocomplete-item:hover{background:var(--wiki-verde-cl)}
     .wiki-resultado-enlace{display:inline-block;margin-top:.5rem;font-size:.85rem;font-weight:700;color:var(--wiki-verde-osc);text-decoration:underline}
+    .wiki-ac-grupo{padding:.4rem 1rem .2rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--wiki-muted);font-weight:800;background:var(--wiki-fondo)}
   </style>
 </head>
 <body>
@@ -452,35 +453,69 @@
     if (!e.target.closest('.wiki-buscador-wrap')) document.getElementById('wiki-autocomplete').style.display = 'none';
   });
 
+    function buscarEnGuiaLocal(termino) {
+    const t = termino.toLowerCase();
+    return medsComunes.filter(m => m.name.toLowerCase().includes(t) || m.generic.toLowerCase().includes(t));
+  }
+
   async function cargarSugerencias(termino) {
     const cont = document.getElementById('wiki-autocomplete');
+    const locales = buscarEnGuiaLocal(termino).slice(0, 5);
+
+    let externas = [];
     try {
       const r = await fetch(`${BACKEND_URL}/api/publico/medicamento-sugerencias?nombre=${encodeURIComponent(termino)}`);
-      const data = await r.json();
-      if (!r.ok || !data.length) { cont.style.display = 'none'; return; }
-      cont.innerHTML = data.map(m => `
-        <div class="wiki-autocomplete-item" onclick="seleccionarSugerencia('${encodeURIComponent(m.nombre)}')">
-          💊 ${escapeHtml(m.nombre)}
-        </div>`).join('');
-      cont.style.display = 'block';
-    } catch (e) { cont.style.display = 'none'; }
+      if (r.ok) externas = await r.json();
+    } catch (e) { /* si CIMA falla, igual mostramos las locales */ }
+
+    if (!locales.length && !externas.length) { cont.style.display = 'none'; return; }
+
+    let html = '';
+    if (locales.length) {
+      html += `<div class="wiki-ac-grupo">De la guía</div>`;
+      html += locales.map(m => `<div class="wiki-autocomplete-item" onclick="abrirModalMedPorNombre('${encodeURIComponent(m.name)}')">📚 ${escapeHtml(m.name)}</div>`).join('');
+    }
+    if (externas.length) {
+      html += `<div class="wiki-ac-grupo">Base oficial CIMA</div>`;
+      html += externas.slice(0, 6).map(m => `<div class="wiki-autocomplete-item" onclick="seleccionarSugerencia('${encodeURIComponent(m.nombre)}','${m.nregistro || ''}')">💊 ${escapeHtml(m.nombre)}</div>`).join('');
+    }
+    cont.innerHTML = html;
+    cont.style.display = 'block';
   }
 
-  function seleccionarSugerencia(nombreCodificado) {
-    const nombre = decodeURIComponent(nombreCodificado);
-    inputBuscarMed.value = nombre;
+  function abrirModalMedPorNombre(nombreCod) {
     document.getElementById('wiki-autocomplete').style.display = 'none';
-    buscarInfoMedicamento();
+    const nombre = decodeURIComponent(nombreCod);
+    let idx = window._wikiFiltrados.findIndex(m => m.name === nombre);
+    if (idx === -1) {
+      // el filtro activo no incluye este medicamento; volvemos a "Todos"
+      wikiFiltroActivo = 'todos';
+      document.querySelectorAll('.wiki-filtro').forEach(b => b.classList.remove('activo'));
+      document.querySelector('.wiki-filtro[data-filtro="todos"]').classList.add('activo');
+      renderMedsComunes();
+      idx = window._wikiFiltrados.findIndex(m => m.name === nombre);
+    }
+    abrirModalMed(idx);
+    document.getElementById('guia').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  async function buscarInfoMedicamento() {
+  async function seleccionarSugerencia(nombreCod, nregistro) {
+    document.getElementById('wiki-autocomplete').style.display = 'none';
+    inputBuscarMed.value = decodeURIComponent(nombreCod);
+    await buscarInfoMedicamento(nregistro || null);
+  }
+
+  async function buscarInfoMedicamento(nregistroDirecto) {
     document.getElementById('wiki-autocomplete').style.display = 'none';
     const cont  = document.getElementById('resultado-buscar-med');
     const nombre = inputBuscarMed.value.trim();
-    if (nombre.length < 3) { cont.innerHTML = `<p class="wiki-error">Escribe al menos 3 letras.</p>`; return; }
+    if (!nregistroDirecto && nombre.length < 3) { cont.innerHTML = `<p class="wiki-error">Escribe al menos 3 letras.</p>`; return; }
     cont.innerHTML = `<p class="wiki-cargando">Buscando...</p>`;
     try {
-      const r = await fetch(`${BACKEND_URL}/api/publico/medicamento-info?nombre=${encodeURIComponent(nombre)}`);
+      const url = nregistroDirecto
+        ? `${BACKEND_URL}/api/publico/medicamento-info?nregistro=${encodeURIComponent(nregistroDirecto)}&nombre=${encodeURIComponent(nombre)}`
+        : `${BACKEND_URL}/api/publico/medicamento-info?nombre=${encodeURIComponent(nombre)}`;
+      const r = await fetch(url);
       const data = await r.json();
       if (!r.ok) { cont.innerHTML = `<p class="wiki-error">${escapeHtml(data.error || 'No se encontró información.')}</p>`; return; }
       const enlaceOficial = data.source_id
@@ -496,7 +531,6 @@
         </div>`;
     } catch (e) { cont.innerHTML = `<p class="wiki-error">Error de conexión. Intenta de nuevo.</p>`; }
   }
-  }
 
   // ── Farmacias cercanas ──
   let _mapaFarmacias = null;
@@ -507,62 +541,90 @@
     const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
+    async function consultarOverpass(lat, lon, radio) {
+    const query = `[out:json][timeout:25];(
+      nwr["amenity"="pharmacy"](around:${radio},${lat},${lon});
+      nwr["healthcare"="pharmacy"](around:${radio},${lat},${lon});
+    );out center;`;
+    const servidores = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter'
+    ];
+    for (const url of servidores) {
+      try {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'data=' + encodeURIComponent(query)
+        });
+        if (!r.ok) { console.warn('Overpass respondió', r.status, 'en', url); continue; }
+        const data = await r.json();
+        console.log(`[Overpass radio ${radio}m, servidor ${url}]`, data); // revisa esto en la consola (F12) si sigue fallando
+        if (data.remark) { console.warn('Overpass devolvió un remark (probable error/timeout):', data.remark); continue; }
+        return data;
+      } catch (e) { console.warn('Overpass falló en', url, e); }
+    }
+    return null;
+  }
+
   function buscarFarmaciasCercanas() {
     const estado = document.getElementById('farmacias-estado');
     const btn = document.getElementById('btn-buscar-farmacias');
     estado.style.display = 'block';
     estado.textContent = 'Obteniendo tu ubicación...';
     btn.disabled = true;
-    if (!navigator.geolocation) { estado.textContent = 'Tu navegador no soporta geolocalización.'; btn.disabled = false; return; }
+
+    if (!navigator.geolocation) {
+      estado.textContent = 'Tu navegador no soporta geolocalización.';
+      btn.disabled = false;
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(async (pos) => {
-      try{
       const { latitude: lat, longitude: lon } = pos.coords;
+      console.log('Tu ubicación detectada:', lat, lon); // verifica que esto sea correcto
       estado.textContent = 'Buscando farmacias en un radio de 1.5 km...';
-      // nwr = busca en nodos, ways (edificios) y relaciones a la vez;
-      // se incluyen ambas etiquetas porque no todo mapeador usa "amenity"
-      const query = `[out:json][timeout:25];(
-        nwr["amenity"="pharmacy"](around:1500,${lat},${lon});
-        nwr["healthcare"="pharmacy"](around:1500,${lat},${lon});
-      );out center;`;
 
-      const servidores = [
-        'https://overpass-api.de/api/interpreter',
-        'https://overpass.kumi.systems/api/interpreter'
-      ];
+      try {
+        let radio = 1500, ampliado = false;
+        let data = await consultarOverpass(lat, lon, radio);
 
-      let data = null;
-      for (const url of servidores) {
-        try {
-          const r = await fetch(url, { method: 'POST', body: 'data=' + encodeURIComponent(query) });
-          if (r.ok) { data = await r.json(); break; }
-        } catch (e) { /* probar el siguiente servidor */ }
-      }
-      if (!data) throw new Error('sin respuesta de Overpass');
+        if (data && !(data.elements || []).length) {
+          radio = 3000; ampliado = true;
+          estado.textContent = 'Nada en 1.5 km, ampliando a 3 km...';
+          data = await consultarOverpass(lat, lon, radio);
+        }
+        if (!data) throw new Error('Ninguno de los servidores de Overpass respondió');
 
-      const farmacias = (data.elements || [])
-        .map(f => {
-          const flat = f.lat ?? f.center?.lat;
-          const flon = f.lon ?? f.center?.lon;
-          if (flat == null || flon == null) return null;
-          return {
-            nombre: f.tags?.name || 'Farmacia sin nombre registrado',
-            lat: flat, lon: flon,
-            distancia: distanciaKm(lat, lon, flat, flon)
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.distancia - b.distancia);
-          
+        const farmacias = (data.elements || [])
+          .map(f => {
+            const flat = f.lat ?? f.center?.lat;
+            const flon = f.lon ?? f.center?.lon;
+            if (flat == null || flon == null) return null;
+            return { nombre: f.tags?.name || 'Farmacia sin nombre registrado', lat: flat, lon: flon, distancia: distanciaKm(lat, lon, flat, flon) };
+          })
+          .filter(Boolean)
+          .sort((a, b) => a.distancia - b.distancia);
+
         btn.disabled = false;
-          if (!farmacias.length) {
-          estado.textContent = 'No se encontraron farmacias registradas en un radio de 1.5 km. Prueba ampliando el radio de búsqueda en una zona con más cobertura de OpenStreetMap.';
+
+        if (!farmacias.length) {
+          estado.textContent = 'No encontramos farmacias mapeadas en OpenStreetMap cerca de tu ubicación (probamos hasta 3 km). Pueden existir farmacias reales que aún no estén registradas en el mapa de esa zona.';
           return;
         }
-        estado.textContent = `Se encontraron ${farmacias.length} farmacia(s) cerca de ti:`;
+
+        estado.textContent = `Se encontraron ${farmacias.length} farmacia(s)${ampliado ? ' (radio ampliado a 3 km)' : ''}:`;
         mostrarMapaFarmacias(lat, lon, farmacias);
         mostrarListaFarmacias(farmacias);
-      } catch (e) { estado.textContent = 'Error al buscar farmacias. Intenta de nuevo en unos segundos.'; btn.disabled = false; }
-    }, () => { estado.textContent = 'No pudimos acceder a tu ubicación. Revisa los permisos de tu navegador.'; btn.disabled = false; }, { enableHighAccuracy: true, timeout: 10000 });
+      } catch (e) {
+        console.error('Error buscando farmacias:', e);
+        estado.textContent = 'Error al buscar farmacias. Abre la consola del navegador (F12) para ver el detalle.';
+        btn.disabled = false;
+      }
+    }, () => {
+      estado.textContent = 'No pudimos acceder a tu ubicación. Revisa los permisos de tu navegador.';
+      btn.disabled = false;
+    }, { enableHighAccuracy: true, timeout: 10000 });
   }
   function mostrarMapaFarmacias(lat, lon, farmacias) {
     const cont = document.getElementById('mapa-farmacias');

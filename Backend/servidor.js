@@ -486,10 +486,11 @@ app.get('/api/auth/perfil', autenticar, async (req, res) => {
 
 app.get('/api/publico/medicamento-info', limiterPublico, async (req, res) => {
   const nombreOriginal = (req.query.nombre || '').trim();
-  if (!nombreOriginal || nombreOriginal.length < 3)
-    return res.status(400).json({ error: 'Escribe al menos 3 letras' });
+  const nregistro = (req.query.nregistro || '').trim();
+  if (!nombreOriginal && !nregistro)
+    return res.status(400).json({ error: 'Falta el parámetro nombre' });
 
-  const searchName = nombreOriginal.toLowerCase()
+  const searchName = (nregistro || nombreOriginal).toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   try {
@@ -498,9 +499,16 @@ app.get('/api/publico/medicamento-info', limiterPublico, async (req, res) => {
     );
     if (cache.rows.length) return res.json({ ...cache.rows[0], cached: true });
 
-    const r = await fetch(`https://cima.aemps.es/cima/rest/medicamentos?nombre=${encodeURIComponent(nombreOriginal)}`);
-    const data = await r.json();
-    const med = data?.resultados?.[0];
+    let med;
+    if (nregistro) {
+      const r = await fetch(`https://cima.aemps.es/cima/rest/medicamento?nregistro=${encodeURIComponent(nregistro)}`);
+      const json = await r.json();
+      med = json?.nregistro ? json : null;
+    } else {
+      const r = await fetch(`https://cima.aemps.es/cima/rest/medicamentos?nombre=${encodeURIComponent(nombreOriginal)}`);
+      const json = await r.json();
+      med = json?.resultados?.[0];
+    }
 
     if (!med) return res.status(404).json({ error: 'No se encontró información para este medicamento' });
 
