@@ -493,11 +493,20 @@ app.get('/api/publico/medicamento-info', limiterPublico, async (req, res) => {
   const searchName = (nregistro || nombreOriginal).toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+  // No se espera (await) a propósito: si falla el registro, no debe tumbar la búsqueda del usuario.
+  const registrarBusqueda = (displayName) => {
+    pool.query('INSERT INTO busqueda_log (search_name, display_name) VALUES ($1,$2)', [searchName, displayName])
+      .catch(e => console.warn('No se pudo registrar la búsqueda:', e.message));
+  };
+
   try {
     const cache = await pool.query(
       'SELECT * FROM medication_info WHERE search_name=$1', [searchName]
     );
-    if (cache.rows.length) return res.json({ ...cache.rows[0], cached: true });
+    if (cache.rows.length) {
+      registrarBusqueda(cache.rows[0].display_name);
+      return res.json({ ...cache.rows[0], cached: true });
+    }
 
     let med;
     if (nregistro) {
@@ -528,10 +537,28 @@ app.get('/api/publico/medicamento-info', limiterPublico, async (req, res) => {
        RETURNING *`,
       [info.search_name, info.display_name, info.active_ingredient, info.description, info.source, info.source_id]
     );
+    registrarBusqueda(inserted.rows[0].display_name);
     res.json({ ...inserted.rows[0], cached: false });
   } catch (err) {
     console.error('Error /api/publico/medicamento-info:', err.message);
     res.status(500).json({ error: 'Error al obtener información del medicamento' });
+  }
+});
+
+app.get('/api/publico/medicamentos-populares', limiterPublico, async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT display_name, COUNT(*) as veces
+       FROM busqueda_log
+       WHERE buscado_en >= NOW() - INTERVAL '7 days' AND display_name IS NOT NULL
+       GROUP BY display_name
+       ORDER BY veces DESC
+       LIMIT 5`
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error('Error /api/publico/medicamentos-populares:', err.message);
+    res.json([]);
   }
 });
 

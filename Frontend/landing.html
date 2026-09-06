@@ -124,8 +124,9 @@
       .wiki-modal-fondo, .wiki-modal-fondo *{visibility:visible}
       .wiki-modal-fondo{position:absolute;inset:0;background:#fff;padding:0}
       .wiki-modal{box-shadow:none;max-height:none;max-width:100%}
-      .wiki-modal-cerrar, .wiki-modal-acciones{display:none}
-}
+      .wiki-modal-cerrar, .wiki-modal-acciones{display:none}}
+      .wiki-btn-instalar{background:var(--wiki-verde);color:#fff;border:none;border-radius:8px;padding:.5rem 1rem;font-size:.82rem;font-weight:800;cursor:pointer;font-family:inherit}
+      .wiki-btn-instalar:hover{background:var(--wiki-verde-osc)}
   </style>
 </head>
 <body>
@@ -138,7 +139,8 @@
       <a href="#buscar">Buscar</a>
       <a href="#guia">Guía</a>
       <a href="#farmacias">Farmacias</a>
-      <a href="/inicio.html">Iniciar sesión</a>
+      <a href="/inicio.html">Iniciar Sesión</a>
+      <button id="btn-instalar-wiki" class="wiki-btn-instalar" style="display:none" onclick="instalarWiki()">📲 Instalar</button>
     </div>
   </nav>
 
@@ -164,6 +166,7 @@
       <div id="wiki-autocomplete" class="wiki-autocomplete" style="display:none"></div>
     </div>
     <div id="wiki-recientes" class="wiki-recientes"></div>
+    <div id="wiki-populares" class="wiki-populares"></div>
     <div id="resultado-buscar-med"></div>
   </section>
 
@@ -173,7 +176,7 @@
     <p class="wiki-section-sub">Los más usados, explicados con claridad. Toca una tarjeta para ver el detalle.</p>
 
     <div class="wiki-filtros" id="wiki-filtros">
-      <button class="wiki-filtro activo" data-filtro="todos">Todos</button>
+      <button class="wiki-filtro activo" data-filtro="todos" aria-pressed="true">Todos</button>
       <button class="wiki-filtro" data-filtro="cabeza">🧠 Cabeza</button>
       <button class="wiki-filtro" data-filtro="fiebre">🌡️ Fiebre</button>
       <button class="wiki-filtro" data-filtro="stomach">🩹 Estómago</button>
@@ -199,7 +202,7 @@
     <h2 class="wiki-section-titulo">📍 Farmacias cercanas</h2>
     <p class="wiki-section-sub">Encuentra farmacias en un radio de 1.5 km desde tu ubicación.</p>
     <button class="wiki-btn wiki-btn-borde" id="btn-buscar-farmacias" onclick="buscarFarmaciasCercanas()">📍 Usar mi ubicación</button>
-    <p id="farmacias-estado" class="wiki-nota" style="display:none"></p>
+    <p id="farmacias-estado" class="wiki-nota" aria-live="polite" style="display:none"></p>
     <div class="wiki-farmacias-layout">
       <div id="mapa-farmacias" class="wiki-mapa" style="display:none"></div>
       <div id="lista-farmacias"></div>
@@ -222,8 +225,8 @@
 
   <!-- Modal detalle de medicamento (guía curada) -->
   <div class="wiki-modal-fondo" id="mw-modal-fondo" onclick="if(event.target===this) cerrarModalMed()">
-    <div class="wiki-modal">
-      <button class="wiki-modal-cerrar" onclick="cerrarModalMed()">✕</button>
+    <div class="wiki-modal" role="dialog" aria-modal="true" aria-labelledby="mw-modal-nombre">
+      <button class="wiki-modal-cerrar" onclick="cerrarModalMed()" aria-label="Cerrar">✕</button>
       <div class="wiki-modal-icon" id="mw-modal-icon"></div>
       <h3 class="wiki-modal-nombre" id="mw-modal-nombre"></h3>
       <p class="wiki-modal-generico" id="mw-modal-generico"></p>
@@ -445,9 +448,25 @@
       <div class="wiki-info-row"><div class="wiki-label">Contraindicaciones</div><div class="wiki-valor">${escapeHtml(m.contra)}</div></div>
       <div class="wiki-aviso" style="margin-top:1rem">⚠️ Información educativa. No reemplaza la consulta médica.</div>`;
     document.getElementById('mw-modal-fondo').classList.add('activo');
+    _elementoFocoPrevio = document.activeElement;
+    document.querySelector('.wiki-modal-cerrar').focus();
+    document.addEventListener('keydown', _manejarTecladoModal);
+  }
+  let _elementoFocoPrevio = null;
+  function _manejarTecladoModal(e) {
+    if (e.key === 'Escape') { cerrarModalMed(); return; }
+    if (e.key !== 'Tab') return;
+    const modal = document.querySelector('.wiki-modal');
+    const focusables = modal.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])');
+    if (!focusables.length) return;
+    const primero = focusables[0], ultimo = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
   }
   function cerrarModalMed() {
     document.getElementById('mw-modal-fondo').classList.remove('activo');
+    document.removeEventListener('keydown', _manejarTecladoModal);
+    if (_elementoFocoPrevio) _elementoFocoPrevio.focus();
   }
 
   async function compartirMedicamento() {
@@ -474,8 +493,9 @@
   }
   document.querySelectorAll('.wiki-filtro').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.wiki-filtro').forEach(b => b.classList.remove('activo'));
+      document.querySelectorAll('.wiki-filtro').forEach(b => { b.classList.remove('activo'); b.setAttribute('aria-pressed', 'false'); });
       btn.classList.add('activo');
+      btn.setAttribute('aria-pressed', 'true');
       wikiFiltroActivo = btn.dataset.filtro;
       renderMedsComunes();
     });
@@ -510,6 +530,20 @@
     buscarInfoMedicamento();
   }
   renderRecientes();
+
+  (async function cargarPopulares() {
+    try {
+      const r = await fetch(`${BACKEND_URL}/api/publico/medicamentos-populares`);
+      const data = await r.json();
+      const cont = document.getElementById('wiki-populares');
+      if (!data.length) { cont.innerHTML = ''; return; }
+      cont.innerHTML = `
+        <p class="wiki-populares-titulo">🔥 Más consultados esta semana</p>
+        <div class="wiki-populares-lista">
+          ${data.map((m, i) => `<span class="wiki-populares-item"><b>${i+1}.</b> ${escapeHtml(m.display_name)}</span>`).join('')}
+        </div>`;
+    } catch (e) { /* silencioso: si falla, simplemente no se muestra el ranking */ }
+  })();
 
   inputBuscarMed.addEventListener('input', () => {
     clearTimeout(_acTimeout);
@@ -742,6 +776,24 @@
 </script>
 <script>
   if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(function() {}); }
+</script>
+<script>
+  let _promptInstalacion = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _promptInstalacion = e;
+    document.getElementById('btn-instalar-wiki').style.display = 'inline-block';
+  });
+  async function instalarWiki() {
+    if (!_promptInstalacion) return;
+    _promptInstalacion.prompt();
+    await _promptInstalacion.userChoice;
+    _promptInstalacion = null;
+    document.getElementById('btn-instalar-wiki').style.display = 'none';
+  }
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('btn-instalar-wiki').style.display = 'none';
+  });
 </script>
 </body>
 </html>
