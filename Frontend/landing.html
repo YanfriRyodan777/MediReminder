@@ -648,6 +648,54 @@
     const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
+    async function consultarPhoton(lat, lon, radioMetros) {
+    const controlador = new AbortController();
+    const limite = setTimeout(() => controlador.abort(), 8000);
+    try {
+      const url = `https://photon.komoot.io/reverse?lon=${lon}&lat=${lat}&osm_tag=amenity:pharmacy&limit=20`;
+      const r = await fetch(url, { signal: controlador.signal });
+      clearTimeout(limite);
+      if (!r.ok) { console.warn('Photon respondió', r.status); return null; }
+      const data = await r.json();
+      console.log('[Photon]', data);
+      return (data.features || [])
+        .map(f => {
+          const [flon, flat] = f.geometry?.coordinates || [];
+          if (flat == null || flon == null) return null;
+          return {
+            nombre: f.properties?.name || 'Farmacia sin nombre registrado',
+            lat: flat, lon: flon,
+            distancia: distanciaKm(lat, lon, flat, flon)
+          };
+        })
+        .filter(Boolean)
+        .filter(f => f.distancia * 1000 <= radioMetros)
+        .sort((a, b) => a.distancia - b.distancia);
+    } catch (e) {
+      clearTimeout(limite);
+      console.warn('Photon falló:', e);
+      return null;
+    }
+  }
+
+  async function obtenerFarmacias(lat, lon, radioMetros) {
+    // 1º intento: Photon (infraestructura de Komoot, mucho más estable que los espejos comunitarios de Overpass)
+    const dePhoton = await consultarPhoton(lat, lon, radioMetros);
+    if (dePhoton) return dePhoton;
+
+    // 2º intento: Overpass como respaldo, solo si Photon falló por completo
+    const data = await consultarOverpass(lat, lon, radioMetros);
+    if (!data) return null;
+    return (data.elements || [])
+      .map(f => {
+        const flat = f.lat ?? f.center?.lat;
+        const flon = f.lon ?? f.center?.lon;
+        if (flat == null || flon == null) return null;
+        return { nombre: f.tags?.name || 'Farmacia sin nombre registrado', lat: flat, lon: flon, distancia: distanciaKm(lat, lon, flat, flon) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.distancia - b.distancia);
+  }
   async function consultarOverpass(lat, lon, radio) {
     // Solo "amenity=pharmacy" (la etiqueta casi universal) para aligerar el cálculo del servidor.
     const query = `[out:json][timeout:25];nwr["amenity"="pharmacy"](around:${radio},${lat},${lon});out center;`;
@@ -713,24 +761,14 @@
 
       try {
         let radio = 1500, ampliado = false;
-        let data = await consultarOverpass(lat, lon, radio);
+        let farmacias = await obtenerFarmacias(lat, lon, radio);
 
-        if (data && !(data.elements || []).length) {
+        if (farmacias && !farmacias.length) {
           radio = 3000; ampliado = true;
           estado.textContent = 'Nada en 1.5 km, ampliando a 3 km...';
-          data = await consultarOverpass(lat, lon, radio);
+          farmacias = await obtenerFarmacias(lat, lon, radio);
         }
-        if (!data) throw new Error('Ninguno de los servidores de Overpass respondió');
-
-        const farmacias = (data.elements || [])
-          .map(f => {
-            const flat = f.lat ?? f.center?.lat;
-            const flon = f.lon ?? f.center?.lon;
-            if (flat == null || flon == null) return null;
-            return { nombre: f.tags?.name || 'Farmacia sin nombre registrado', lat: flat, lon: flon, distancia: distanciaKm(lat, lon, flat, flon) };
-          })
-          .filter(Boolean)
-          .sort((a, b) => a.distancia - b.distancia);
+        if (!farmacias) throw new Error('Ninguna fuente de datos de farmacias respondió');
 
         btn.disabled = false;
 
