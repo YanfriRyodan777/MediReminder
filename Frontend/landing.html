@@ -679,11 +679,13 @@
   }
 
   async function obtenerFarmacias(lat, lon, radioMetros) {
-    // 1º intento: Photon (infraestructura de Komoot, mucho más estable que los espejos comunitarios de Overpass)
+    // 1º intento: Photon. Solo lo usamos si encontró algo de verdad —
+    // si devuelve null (falló) o un arreglo vacío (no encontró nada), pasamos a Overpass igual,
+    // porque un arreglo vacío no significa que no haya farmacias, puede que Photon no las tenga indexadas.
     const dePhoton = await consultarPhoton(lat, lon, radioMetros);
-    if (dePhoton) return dePhoton;
+    if (dePhoton && dePhoton.length) return dePhoton;
 
-    // 2º intento: Overpass como respaldo, solo si Photon falló por completo
+    // 2º intento: Overpass como respaldo (el que ya sabemos que te funcionó antes)
     const data = await consultarOverpass(lat, lon, radioMetros);
     if (!data) return null;
     return (data.elements || [])
