@@ -648,91 +648,17 @@
     const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
-    async function consultarPhoton(lat, lon, radioMetros) {
-    const controlador = new AbortController();
-    const limite = setTimeout(() => controlador.abort(), 8000);
+  async function obtenerFarmacias(lat, lon, radioMetros) {
     try {
-      const url = `https://photon.komoot.io/reverse?lon=${lon}&lat=${lat}&osm_tag=amenity:pharmacy&limit=20`;
-      const r = await fetch(url, { signal: controlador.signal });
-      clearTimeout(limite);
-      if (!r.ok) { console.warn('Photon respondió', r.status); return null; }
+      const r = await fetch(`${BACKEND_URL}/api/publico/farmacias-cercanas?lat=${lat}&lon=${lon}&radio=${radioMetros}`);
+      if (!r.ok) { console.warn('El backend respondió', r.status); return null; }
       const data = await r.json();
-      console.log('[Photon]', data);
-      return (data.features || [])
-        .map(f => {
-          const [flon, flat] = f.geometry?.coordinates || [];
-          if (flat == null || flon == null) return null;
-          return {
-            nombre: f.properties?.name || 'Farmacia sin nombre registrado',
-            lat: flat, lon: flon,
-            distancia: distanciaKm(lat, lon, flat, flon)
-          };
-        })
-        .filter(Boolean)
-        .filter(f => f.distancia * 1000 <= radioMetros)
+      console.log('[farmacias-cercanas]', data);
+      return (data.farmacias || [])
+        .map(f => ({ ...f, distancia: distanciaKm(lat, lon, f.lat, f.lon) }))
         .sort((a, b) => a.distancia - b.distancia);
     } catch (e) {
-      clearTimeout(limite);
-      console.warn('Photon falló:', e);
-      return null;
-    }
-  }
-
-  async function obtenerFarmacias(lat, lon, radioMetros) {
-    // 1º intento: Photon. Solo lo usamos si encontró algo de verdad —
-    // si devuelve null (falló) o un arreglo vacío (no encontró nada), pasamos a Overpass igual,
-    // porque un arreglo vacío no significa que no haya farmacias, puede que Photon no las tenga indexadas.
-    const dePhoton = await consultarPhoton(lat, lon, radioMetros);
-    if (dePhoton && dePhoton.length) return dePhoton;
-
-    // 2º intento: Overpass como respaldo (el que ya sabemos que te funcionó antes)
-    const data = await consultarOverpass(lat, lon, radioMetros);
-    if (!data) return null;
-    return (data.elements || [])
-      .map(f => {
-        const flat = f.lat ?? f.center?.lat;
-        const flon = f.lon ?? f.center?.lon;
-        if (flat == null || flon == null) return null;
-        return { nombre: f.tags?.name || 'Farmacia sin nombre registrado', lat: flat, lon: flon, distancia: distanciaKm(lat, lon, flat, flon) };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.distancia - b.distancia);
-  }
-  async function consultarOverpass(lat, lon, radio) {
-    const query = `[out:json][timeout:25];nwr["amenity"="pharmacy"](around:${radio},${lat},${lon});out center;`;
-    const servidores = [
-      'https://overpass.kumi.systems/api/interpreter',
-      'https://overpass.openstreetmap.ru/api/interpreter',
-      'https://overpass-api.de/api/interpreter'
-    ];
-
-    const intentarServidor = (url) => new Promise(async (resolve, reject) => {
-      const controlador = new AbortController();
-      const limite = setTimeout(() => controlador.abort(), 15000);
-      try {
-        const r = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: 'data=' + encodeURIComponent(query),
-          signal: controlador.signal
-        });
-        clearTimeout(limite);
-        if (!r.ok) return reject(new Error(`${url} respondió ${r.status}`));
-        const data = await r.json();
-        if (data.remark) return reject(new Error(`${url} devolvió remark: ${data.remark}`));
-        console.log(`[Overpass OK, servidor ${url}]`, data);
-        resolve(data);
-      } catch (e) {
-        clearTimeout(limite);
-        reject(e);
-      }
-    });
-
-    try {
-      // Promise.any = probar los 3 servidores a la vez, usar el primero que responda bien
-      return await Promise.any(servidores.map(intentarServidor));
-    } catch (errores) {
-      console.warn('Los 3 servidores de Overpass fallaron:', errores?.errors || errores);
+      console.warn('Error consultando farmacias-cercanas:', e);
       return null;
     }
   }

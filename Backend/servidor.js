@@ -561,6 +561,56 @@ app.get('/api/publico/medicamentos-populares', limiterPublico, async (req, res) 
     res.json([]);
   }
 });
+app.get('/api/publico/farmacias-cercanas', limiterPublico, async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lon = parseFloat(req.query.lon);
+  const radio = parseInt(req.query.radio) || 1500;
+  if (Number.isNaN(lat) || Number.isNaN(lon)) return res.status(400).json({ error: 'Faltan coordenadas válidas' });
+
+  const query = `[out:json][timeout:25];nwr["amenity"="pharmacy"](around:${radio},${lat},${lon});out center;`;
+  const servidores = [
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.openstreetmap.ru/api/interpreter',
+    'https://overpass-api.de/api/interpreter'
+  ];
+
+  const intentarServidor = (url) => new Promise(async (resolve, reject) => {
+    const controlador = new AbortController();
+    const limite = setTimeout(() => controlador.abort(), 15000);
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query),
+        signal: controlador.signal
+      });
+      clearTimeout(limite);
+      if (!r.ok) return reject(new Error(`${url} respondió ${r.status}`));
+      const data = await r.json();
+      if (data.remark) return reject(new Error(`${url} devolvió remark: ${data.remark}`));
+      resolve(data);
+    } catch (e) {
+      clearTimeout(limite);
+      reject(e);
+    }
+  });
+
+  try {
+    const data = await Promise.any(servidores.map(intentarServidor));
+    const farmacias = (data.elements || [])
+      .map(f => {
+        const flat = f.lat ?? f.center?.lat;
+        const flon = f.lon ?? f.center?.lon;
+        if (flat == null || flon == null) return null;
+        return { nombre: f.tags?.name || 'Farmacia sin nombre registrado', lat: flat, lon: flon };
+      })
+      .filter(Boolean);
+    res.json({ farmacias });
+  } catch (errores) {
+    console.error('Error /api/publico/farmacias-cercanas:', errores?.errors?.map(e => e.message).join(' | '));
+    res.status(502).json({ error: 'No se pudo obtener información de farmacias en este momento' });
+  }
+});
 
 app.get('/api/publico/medicamento-sugerencias', limiterPublico, async (req, res) => {
   const nombre = (req.query.nombre || '').trim();
