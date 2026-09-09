@@ -571,7 +571,9 @@ app.get('/api/publico/farmacias-cercanas', limiterPublico, async (req, res) => {
   const servidores = [
     'https://overpass.kumi.systems/api/interpreter',
     'https://overpass.openstreetmap.ru/api/interpreter',
-    'https://overpass-api.de/api/interpreter'
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
   ];
 
   const intentarServidor = (url) => new Promise(async (resolve, reject) => {
@@ -605,13 +607,26 @@ app.get('/api/publico/farmacias-cercanas', limiterPublico, async (req, res) => {
         return { nombre: f.tags?.name || 'Farmacia sin nombre registrado', lat: flat, lon: flon };
       })
       .filter(Boolean);
-    res.json({ farmacias });
-  } catch (errores) {
-    console.error('Error /api/publico/farmacias-cercanas:', errores?.errors?.map(e => e.message).join(' | '));
-    res.status(502).json({ error: 'No se pudo obtener información de farmacias en este momento' });
+    return res.json({ farmacias, fuente: 'overpass' });
+  } catch (erroresOverpass) {
+    console.error('Overpass falló por completo:', erroresOverpass?.errors?.map(e => e.message).join(' | '));
+  }
+
+  // Último recurso: Nominatim (buscador oficial de OSM), con el User-Agent que exige su política de uso
+  try {
+    const delta = 0.02; // ~2 km de caja alrededor del punto
+    const viewbox = `${lon - delta},${lat + delta},${lon + delta},${lat - delta}`;
+    const url = `https://nominatim.openstreetmap.org/search?q=farmacia&format=json&limit=20&bounded=1&viewbox=${viewbox}`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'MediReminder-MediWiki/1.0 (proyecto universitario)' } });
+    if (!r.ok) throw new Error(`Nominatim respondió ${r.status}`);
+    const resultados = await r.json();
+    const farmacias = resultados.map(f => ({ nombre: f.display_name?.split(',')[0] || 'Farmacia', lat: parseFloat(f.lat), lon: parseFloat(f.lon) }));
+    return res.json({ farmacias, fuente: 'nominatim' });
+  } catch (errorNominatim) {
+    console.error('Error /api/publico/farmacias-cercanas (Nominatim):', errorNominatim.message);
+    return res.status(502).json({ error: 'No se pudo obtener información de farmacias en este momento' });
   }
 });
-
 app.get('/api/publico/medicamento-sugerencias', limiterPublico, async (req, res) => {
   const nombre = (req.query.nombre || '').trim();
   if (nombre.length < 3) return res.json([]);
