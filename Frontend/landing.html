@@ -650,14 +650,15 @@
   }
   async function consultarOverpass(lat, lon, radio) {
     // Solo "amenity=pharmacy" (la etiqueta casi universal) para aligerar el cálculo del servidor.
-    const query = `[out:json][timeout:20];nwr["amenity"="pharmacy"](around:${radio},${lat},${lon});out center;`;
+    const query = `[out:json][timeout:25];nwr["amenity"="pharmacy"](around:${radio},${lat},${lon});out center;`;
     const servidores = [
       'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass.openstreetmap.ru/api/interpreter',
       'https://overpass-api.de/api/interpreter'
     ];
     for (const url of servidores) {
       const controlador = new AbortController();
-      const limite = setTimeout(() => controlador.abort(), 7000); // no esperar más de 7s por servidor
+      const limite = setTimeout(() => controlador.abort(), 12000); // 12s de margen: son servidores gratuitos, a veces lentos
       try {
         const r = await fetch(url, {
           method: 'POST',
@@ -673,7 +674,7 @@
         return data;
       } catch (e) {
         clearTimeout(limite);
-        console.warn(e.name === 'AbortError' ? `Overpass tardó más de 7s en ${url}, probando el siguiente` : `Overpass falló en ${url}`, e);
+        console.warn(e.name === 'AbortError' ? `Overpass tardó más de 12s en ${url}, probando el siguiente` : `Overpass falló en ${url}`, e);
       }
     }
     return null;
@@ -702,7 +703,6 @@
         const { farmacias, ampliado } = JSON.parse(enCache);
         btn.disabled = false;
         sessionStorage.setItem(claveCache, JSON.stringify({ farmacias, ampliado }));
-        estado.textContent = `Se encontraron ${farmacias.length} farmacia(s)${ampliado ? ' (radio ampliado a 3 km)' : ''}:`;
         estado.textContent = `Se encontraron ${farmacias.length} farmacia(s)${ampliado ? ' (radio ampliado a 3 km)' : ''} (resultado guardado de tu última búsqueda):`;
         mostrarMapaFarmacias(lat, lon, farmacias);
         mostrarListaFarmacias(farmacias);
@@ -744,8 +744,9 @@
         mostrarListaFarmacias(farmacias);
       } catch (e) {
         console.error('Error buscando farmacias:', e);
-        estado.textContent = 'Error al buscar farmacias. Abre la consola del navegador (F12) para ver el detalle.';
         btn.disabled = false;
+        estado.innerHTML = `Los servidores gratuitos de farmacias están saturados en este momento. Mientras tanto, puedes
+          <a href="https://www.google.com/maps/search/farmacia/@${lat},${lon},15z" target="_blank" rel="noopener" style="color:var(--wiki-verde-osc);font-weight:700">buscar farmacias cercanas directamente en Google Maps</a>.`;
       }
     }, () => {
       estado.textContent = 'No pudimos acceder a tu ubicación. Revisa los permisos de tu navegador.';
