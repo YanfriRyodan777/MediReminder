@@ -549,11 +549,18 @@
     clearTimeout(_acTimeout);
     const termino = inputBuscarMed.value.trim();
     const cont = document.getElementById('wiki-autocomplete');
-    if (termino.length < 3) { cont.style.display = 'none'; return; }
-    _acTimeout = setTimeout(() => cargarSugerencias(termino), 350); // debounce
+    const resultado = document.getElementById('resultado-buscar-med');
+    if (termino.length < 3) { cont.style.display = 'none'; resultado.innerHTML = ''; return; }
+    _acTimeout = setTimeout(() => {
+      cargarSugerencias(termino);                                  // desplegable de sugerencias
+      buscarInfoMedicamento(null, { mantenerDropdown: true });     // ficha completa, en vivo
+    }, 450); // espera a que dejes de escribir un momento, para no disparar una búsqueda por cada letra
   });
   inputBuscarMed.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') buscarInfoMedicamento();
+    if (e.key === 'Enter') {
+      document.getElementById('wiki-autocomplete').style.display = 'none';
+      buscarInfoMedicamento();
+    }
   });
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.wiki-buscador-wrap')) document.getElementById('wiki-autocomplete').style.display = 'none';
@@ -611,8 +618,8 @@
     await buscarInfoMedicamento(nregistro || null);
   }
 
-  async function buscarInfoMedicamento(nregistroDirecto) {
-    document.getElementById('wiki-autocomplete').style.display = 'none';
+  async function buscarInfoMedicamento(nregistroDirecto, opts = {}) {
+    if (!opts.mantenerDropdown) document.getElementById('wiki-autocomplete').style.display = 'none';
     const cont  = document.getElementById('resultado-buscar-med');
     const nombre = inputBuscarMed.value.trim();
     if (!nregistroDirecto && nombre.length < 3) { cont.innerHTML = `<p class="wiki-error">Escribe al menos 3 letras.</p>`; return; }
