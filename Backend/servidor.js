@@ -561,6 +561,24 @@ app.get('/api/publico/medicamentos-populares', limiterPublico, async (req, res) 
     res.json([]);
   }
 });
+
+app.get('/api/publico/medicamentos-estadisticas', limiterPublico, async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT display_name, COUNT(*) as veces
+       FROM busqueda_log
+       WHERE buscado_en >= NOW() - INTERVAL '30 days' AND display_name IS NOT NULL
+       GROUP BY display_name
+       ORDER BY veces DESC
+       LIMIT 8`
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error('Error /api/publico/medicamentos-estadisticas:', err.message);
+    res.json([]);
+  }
+});
+
 app.get('/api/publico/farmacias-cercanas', limiterPublico, async (req, res) => {
   const lat = parseFloat(req.query.lat);
   const lon = parseFloat(req.query.lon);
