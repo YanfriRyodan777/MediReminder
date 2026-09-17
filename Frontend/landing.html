@@ -1,21 +1,30 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <meta name="description" content="MediReminder — Sistema inteligente de recordatorio de medicamentos para adultos mayores y cuidadores."/>
   <title>MediReminder — Tu compañero de salud personal</title>
+  <script>(function(){try{if(localStorage.getItem('mw_tema')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
   <link rel="stylesheet" href="estilos.css"/>
   <link rel="manifest" href="/manifest-wiki.json"/>
   <meta name="theme-color" content="#0d9488"/>
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     :root{
       --wiki-fondo:#faf6ee; --wiki-verde:#3f6b4f; --wiki-verde-osc:#2c4d38; --wiki-verde-cl:#e3ede6;
       --wiki-tierra:#c1602f; --wiki-tierra-cl:#fbe8dd; --wiki-texto:#2b2620; --wiki-muted:#8a7f6c;
       --wiki-borde:#e6ddc8; --wiki-card:#fffdf8;
     }
+    :root[data-theme="dark"]{
+  --wiki-fondo:#1b1912; --wiki-verde:#4fae7f; --wiki-verde-osc:#8fd6ac; --wiki-verde-cl:#233327;
+  --wiki-tierra:#e08a5b; --wiki-tierra-cl:#3a2a1f; --wiki-texto:#f0ece1; --wiki-muted:#a89f8c;
+  --wiki-borde:#3a362c; --wiki-card:#252119;
+}
     body{background:var(--wiki-fondo)}
 
     .wiki-nav{position:sticky;top:0;z-index:100;background:var(--wiki-card);border-bottom:1px solid var(--wiki-borde);padding:.875rem 2rem;display:flex;justify-content:space-between;align-items:center}
@@ -127,6 +136,37 @@
       .wiki-modal-cerrar, .wiki-modal-acciones{display:none}}
       .wiki-btn-instalar{background:var(--wiki-verde);color:#fff;border:none;border-radius:8px;padding:.5rem 1rem;font-size:.82rem;font-weight:800;cursor:pointer;font-family:inherit}
       .wiki-btn-instalar:hover{background:var(--wiki-verde-osc)}
+
+.wiki-btn-tema{background:transparent;border:1px solid var(--wiki-borde);border-radius:8px;padding:.4rem .6rem;font-size:.95rem;cursor:pointer;line-height:1}
+.wiki-btn-tema:hover{background:var(--wiki-verde-cl)}
+
+.wiki-comparar-check{position:absolute;top:.85rem;left:.9rem;display:flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:700;color:var(--wiki-muted);cursor:pointer;z-index:2}
+.wiki-comparar-check input{cursor:pointer}
+.wiki-med-card{padding-top:2.3rem}
+.wiki-med-card.seleccionado{border-color:var(--wiki-verde);box-shadow:0 0 0 2px var(--wiki-verde-cl)}
+
+.wiki-barra-comparar{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--wiki-card);border-top:2px solid var(--wiki-verde);padding:.9rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;box-shadow:0 -4px 20px rgba(0,0,0,.1);flex-wrap:wrap}
+.wiki-barra-comparar span{font-weight:700;color:var(--wiki-texto);font-size:.9rem}
+.wiki-barra-comparar-acciones{display:flex;gap:.6rem}
+.wiki-barra-comparar-acciones .wiki-btn{padding:.5rem 1rem;font-size:.82rem}
+
+.wiki-modal-ancho{max-width:700px}
+.wiki-comp-encabezado{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.75rem;margin-bottom:1.25rem}
+.wiki-comp-nombre{font-weight:900;font-size:1.05rem;color:var(--wiki-texto);text-align:center}
+.wiki-comp-vs{color:var(--wiki-muted);font-weight:700;font-size:.8rem}
+.wiki-comp-fila{display:grid;grid-template-columns:120px 1fr 1fr;gap:.75rem;padding:.7rem 0;border-bottom:1px solid var(--wiki-borde);font-size:.85rem}
+.wiki-comp-label{font-weight:700;color:var(--wiki-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.4px;align-self:start}
+.wiki-comp-valor{color:var(--wiki-texto);line-height:1.5}
+
+@media(max-width:600px){
+  .wiki-comp-fila{grid-template-columns:1fr;gap:.25rem}
+  .wiki-comp-label{margin-top:.4rem}
+}
+
+#wiki-qr-cont{margin-top:1rem;text-align:center;padding:1rem;background:var(--wiki-fondo);border-radius:12px}
+.wiki-qr-texto{font-size:.78rem;color:var(--wiki-muted);margin-top:.5rem}
+
+.wiki-chart-cont{max-width:700px;background:var(--wiki-card);border:1px solid var(--wiki-borde);border-radius:14px;padding:1.5rem}
   </style>
 </head>
 <body>
@@ -139,7 +179,9 @@
       <a href="#buscar">Buscar</a>
       <a href="#guia">Guía</a>
       <a href="#farmacias">Farmacias</a>
+      <a href="#estadisticas">Estadísticas</a>
       <a href="/inicio.html">Iniciar Sesión</a>
+      <button id="btn-tema-wiki" class="wiki-btn-tema" onclick="alternarTemaWiki()" aria-label="Cambiar tema de color">🌙</button>
       <button id="btn-instalar-wiki" class="wiki-btn-instalar" style="display:none" onclick="instalarWiki()">📲 Instalar</button>
     </div>
   </nav>
@@ -209,6 +251,15 @@
     </div>
   </section>
 
+    <section class="wiki-section" id="estadisticas">
+    <h2 class="wiki-section-titulo">📊 Estadísticas de uso</h2>
+    <p class="wiki-section-sub">Los medicamentos más consultados en MediWiki durante los últimos 30 días.</p>
+    <div class="wiki-chart-cont">
+      <canvas id="wiki-chart-populares"></canvas>
+    </div>
+    <p id="wiki-chart-vacio" class="wiki-nota" style="display:none">Todavía no hay suficientes búsquedas registradas para mostrar estadísticas.</p>
+  </section>
+
   <!-- CTA compacta hacia MediReminder -->
   <section class="wiki-cta">
     <p class="wiki-cta-texto">
@@ -233,8 +284,33 @@
       <div id="mw-modal-body"></div>
       <div class="wiki-modal-acciones">
         <button class="wiki-btn wiki-btn-borde" onclick="compartirMedicamento()">📤 Compartir</button>
+        <button class="wiki-btn wiki-btn-borde" onclick="generarQRMedicamento()">📱 Código QR</button>
         <button class="wiki-btn wiki-btn-borde" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
       </div>
+      <div id="wiki-qr-cont" style="display:none"></div>
+    </div>
+  </div>
+
+    <!-- Barra flotante de comparación -->
+  <div id="wiki-barra-comparar" class="wiki-barra-comparar" style="display:none">
+    <span id="wiki-comparar-texto"></span>
+    <div class="wiki-barra-comparar-acciones">
+      <button class="wiki-btn wiki-btn-borde" onclick="limpiarComparacion()">Quitar</button>
+      <button class="wiki-btn wiki-btn-primario" id="btn-ver-comparacion" onclick="abrirComparacion()" disabled>Comparar</button>
+    </div>
+  </div>
+
+  <!-- Modal de comparación -->
+  <div class="wiki-modal-fondo" id="wiki-comparacion-fondo" onclick="if(event.target===this) cerrarComparacion()">
+    <div class="wiki-modal wiki-modal-ancho" role="dialog" aria-modal="true">
+      <button class="wiki-modal-cerrar" onclick="cerrarComparacion()" aria-label="Cerrar">✕</button>
+      <div class="wiki-comp-encabezado">
+        <div id="wiki-comparacion-nombre-a" class="wiki-comp-nombre"></div>
+        <div class="wiki-comp-vs">vs.</div>
+        <div id="wiki-comparacion-nombre-b" class="wiki-comp-nombre"></div>
+      </div>
+      <div id="wiki-comparacion-cuerpo"></div>
+      <div class="wiki-aviso" style="margin-top:1rem">⚠️ Información educativa. No reemplaza la consulta médica.</div>
     </div>
   </div>
 
@@ -418,13 +494,19 @@
   let wikiFiltroActivo = 'todos';
   window._wikiFiltrados = medsComunes;
 
+  let _comparar = []; // nombres de los medicamentos elegidos para comparar (máx. 2)
+
   function renderMedsComunes() {
     const grid = document.getElementById('wiki-grid');
     const filtrados = medsComunes.filter(m => wikiFiltroActivo === 'todos' || m.filtros.includes(wikiFiltroActivo));
     window._wikiFiltrados = filtrados;
     grid.innerHTML = filtrados.map((m, i) => `
-      <div class="wiki-med-card" style="animation-delay:${i*0.04}s" onclick="abrirModalMed(${i})">
+      <div class="wiki-med-card ${_comparar.includes(m.name) ? 'seleccionado' : ''}" style="animation-delay:${i*0.04}s" onclick="abrirModalMed(${i})">
         <span class="wiki-badge">${escapeHtml(m.categoria)}</span>
+        <label class="wiki-comparar-check" onclick="event.stopPropagation()">
+          <input type="checkbox" ${_comparar.includes(m.name) ? 'checked' : ''} onchange="toggleComparar('${encodeURIComponent(m.name)}', this.checked)"/>
+          Comparar
+        </label>
         <div class="wiki-icon">${m.icon}</div>
         <div class="wiki-nombre">${escapeHtml(m.name)}</div>
         <div class="wiki-generico">${escapeHtml(m.generic)}</div>
@@ -432,11 +514,69 @@
       </div>`).join('');
   }
 
+  function toggleComparar(nombreCod, marcado) {
+    const nombre = decodeURIComponent(nombreCod);
+    if (marcado) {
+      if (_comparar.length >= 2) {
+        alert('Solo puedes comparar 2 medicamentos a la vez. Quita uno antes de agregar otro.');
+        renderMedsComunes();
+        return;
+      }
+      _comparar.push(nombre);
+    } else {
+      _comparar = _comparar.filter(n => n !== nombre);
+    }
+    renderMedsComunes();
+    renderBarraComparar();
+  }
+
+  function renderBarraComparar() {
+    const barra = document.getElementById('wiki-barra-comparar');
+    if (!_comparar.length) { barra.style.display = 'none'; return; }
+    barra.style.display = 'flex';
+    document.getElementById('wiki-comparar-texto').textContent =
+      _comparar.length === 1 ? `${_comparar[0]} — elige uno más` : `${_comparar[0]} vs. ${_comparar[1]}`;
+    document.getElementById('btn-ver-comparacion').disabled = _comparar.length < 2;
+  }
+
+  function abrirComparacion() {
+    if (_comparar.length < 2) return;
+    const [a, b] = _comparar.map(nombre => medsComunes.find(m => m.name === nombre));
+    const filas = [
+      ['Categoría', a.categoria, b.categoria],
+      ['Principio activo', a.generic, b.generic],
+      ['Síntomas que alivia', a.sintomas.join(', '), b.sintomas.join(', ')],
+      ['Dosis habitual', a.dosis, b.dosis],
+      ['Efectos secundarios', a.efectos, b.efectos],
+      ['Contraindicaciones', a.contra, b.contra],
+    ];
+    document.getElementById('wiki-comparacion-nombre-a').textContent = `${a.icon} ${a.name}`;
+    document.getElementById('wiki-comparacion-nombre-b').textContent = `${b.icon} ${b.name}`;
+    document.getElementById('wiki-comparacion-cuerpo').innerHTML = filas.map(([label, va, vb]) => `
+      <div class="wiki-comp-fila">
+        <div class="wiki-comp-label">${escapeHtml(label)}</div>
+        <div class="wiki-comp-valor">${escapeHtml(va)}</div>
+        <div class="wiki-comp-valor">${escapeHtml(vb)}</div>
+      </div>`).join('');
+    document.getElementById('wiki-comparacion-fondo').classList.add('activo');
+  }
+  function cerrarComparacion() {
+    document.getElementById('wiki-comparacion-fondo').classList.remove('activo');
+  }
+  function limpiarComparacion() {
+    _comparar = [];
+    renderMedsComunes();
+    renderBarraComparar();
+    cerrarComparacion();
+  }
+
   let _medicamentoActual = null;
 
   function abrirModalMed(i) {
     const m = window._wikiFiltrados[i];
     _medicamentoActual = m;
+    document.getElementById('wiki-qr-cont').style.display = 'none';
+    document.getElementById('wiki-qr-cont').innerHTML = '';
     document.getElementById('mw-modal-icon').textContent = m.icon;
     document.getElementById('mw-modal-nombre').textContent = m.name;
     document.getElementById('mw-modal-generico').textContent = `${m.generic} · ${m.categoria}`;
@@ -491,6 +631,18 @@
       }
     }
   }
+    function generarQRMedicamento() {
+    if (!_medicamentoActual) return;
+    const cont = document.getElementById('wiki-qr-cont');
+    if (cont.style.display !== 'none') { cont.style.display = 'none'; cont.innerHTML = ''; return; }
+
+    const url = `${window.location.origin}/landing.html?med=${encodeURIComponent(_medicamentoActual.name)}#guia`;
+    cont.innerHTML = `<div id="wiki-qr-canvas"></div><p class="wiki-qr-texto">Escanéalo para abrir esta ficha directamente</p>`;
+    cont.style.display = 'block';
+    new QRCode(document.getElementById('wiki-qr-canvas'), {
+      text: url, width: 140, height: 140, colorDark: '#2c4d38', colorLight: '#ffffff'
+    });
+  }
   document.querySelectorAll('.wiki-filtro').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.wiki-filtro').forEach(b => { b.classList.remove('activo'); b.setAttribute('aria-pressed', 'false'); });
@@ -501,6 +653,20 @@
     });
   });
   renderMedsComunes();
+
+  // Si el enlace trae ?med=Nombre, abrir directo esa ficha (para cuando alguien escanea un QR)
+  (function comprobarEnlaceDirecto() {
+    const nombreMed = new URLSearchParams(window.location.search).get('med');
+    if (!nombreMed) return;
+    const idx = window._wikiFiltrados.findIndex(m => m.name.toLowerCase() === nombreMed.toLowerCase());
+    if (idx === -1) return;
+    setTimeout(() => {
+      abrirModalMed(idx);
+      document.getElementById('guia').scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  })();
+
+
 
   // ── Buscador libre (CIMA) ──
       let _acTimeout = null;
@@ -775,6 +941,49 @@
   window.addEventListener('appinstalled', () => {
     document.getElementById('btn-instalar-wiki').style.display = 'none';
   });
+</script>
+<script>
+  function aplicarTemaWiki(tema) {
+    document.documentElement.setAttribute('data-theme', tema);
+    document.getElementById('btn-tema-wiki').textContent = tema === 'dark' ? '☀️' : '🌙';
+    localStorage.setItem('mw_tema', tema);
+  }
+  function alternarTemaWiki() {
+    const actual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    aplicarTemaWiki(actual === 'dark' ? 'light' : 'dark');
+  }
+  document.getElementById('btn-tema-wiki').textContent =
+    document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+</script>
+<script>
+  (async function cargarEstadisticas() {
+    try {
+      const r = await fetch(`${BACKEND_URL}/api/publico/medicamentos-estadisticas`);
+      const data = await r.json();
+      if (!data.length) { document.getElementById('wiki-chart-vacio').style.display = 'block'; return; }
+      const ctx = document.getElementById('wiki-chart-populares').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.map(d => d.display_name),
+          datasets: [{
+            label: 'Veces consultado (últimos 30 días)',
+            data: data.map(d => parseInt(d.veces)),
+            backgroundColor: '#3f6b4f',
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+      });
+    } catch (e) {
+      console.warn('No se pudieron cargar las estadísticas:', e);
+      document.getElementById('wiki-chart-vacio').style.display = 'block';
+    }
+  })();
 </script>
 </body>
 </html>
