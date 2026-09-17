@@ -582,8 +582,10 @@ app.get('/api/publico/medicamentos-estadisticas', limiterPublico, async (req, re
 app.get('/api/publico/farmacias-cercanas', limiterPublico, async (req, res) => {
   const lat = parseFloat(req.query.lat);
   const lon = parseFloat(req.query.lon);
-  const radio = parseInt(req.query.radio) || 1500;
-  if (Number.isNaN(lat) || Number.isNaN(lon)) return res.status(400).json({ error: 'Faltan coordenadas válidas' });
+  const radio = Math.min(parseInt(req.query.radio) || 1500, 5000); // tope de 5 km, evita abuso
+  if (Number.isNaN(lat) || Number.isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    return res.status(400).json({ error: 'Coordenadas inválidas' });
+  }
 
   const query = `[out:json][timeout:25];nwr["amenity"="pharmacy"](around:${radio},${lat},${lon});out center;`;
   const servidores = [
