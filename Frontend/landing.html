@@ -166,7 +166,7 @@
 #wiki-qr-cont{margin-top:1rem;text-align:center;padding:1rem;background:var(--wiki-fondo);border-radius:12px}
 .wiki-qr-texto{font-size:.78rem;color:var(--wiki-muted);margin-top:.5rem}
 
-.wiki-chart-cont{max-width:700px;background:var(--wiki-card);border:1px solid var(--wiki-borde);border-radius:14px;padding:1.5rem}
+.wiki-chart-cont{max-width:700px;height:340px;background:var(--wiki-card);border:1px solid var(--wiki-borde);border-radius:14px;padding:1.5rem}
   </style>
 </head>
 <body>
@@ -956,27 +956,52 @@
     document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
 </script>
 <script>
+  // El nombre que da CIMA es el comercial completo (ej. "PARACETAMOL ABAMED 1 G COMPRIMIDOS EFG");
+  // aquí lo recortamos a algo legible para el eje del gráfico, sin perder el nombre completo (va en el tooltip).
+  function nombreCortoParaGrafico(nombre) {
+    const limpio = nombre.replace(/\bEFG\b/gi, '').trim();
+    const primeraFrase = limpio.split(/\d/)[0].trim(); // corta antes del primer número (dosis/cantidad)
+    const base = primeraFrase.length >= 4 ? primeraFrase : limpio;
+    return base.length > 28 ? base.slice(0, 26) + '…' : base;
+  }
+
   (async function cargarEstadisticas() {
     try {
       const r = await fetch(`${BACKEND_URL}/api/publico/medicamentos-estadisticas`);
       const data = await r.json();
       if (!data.length) { document.getElementById('wiki-chart-vacio').style.display = 'block'; return; }
+
+      const estilos = getComputedStyle(document.documentElement);
+      const colorTexto = estilos.getPropertyValue('--wiki-texto').trim() || '#2b2620';
+      const colorBorde = estilos.getPropertyValue('--wiki-borde').trim() || '#e6ddc8';
+      const colorPrimario = estilos.getPropertyValue('--wiki-verde').trim() || '#3f6b4f';
+      const nombresCompletos = data.map(d => d.display_name);
+
       const ctx = document.getElementById('wiki-chart-populares').getContext('2d');
       new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: data.map(d => d.display_name),
+          labels: data.map(d => nombreCortoParaGrafico(d.display_name)),
           datasets: [{
             label: 'Veces consultado (últimos 30 días)',
             data: data.map(d => parseInt(d.veces)),
-            backgroundColor: '#3f6b4f',
+            backgroundColor: colorPrimario,
             borderRadius: 6,
+            barThickness: 22,
           }]
         },
         options: {
+          indexAxis: 'y', // barras horizontales: mucho más legibles con nombres largos
           responsive: true,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { title: (items) => nombresCompletos[items[0].dataIndex] } }
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { stepSize: 1, color: colorTexto }, grid: { color: colorBorde } },
+            y: { ticks: { color: colorTexto }, grid: { display: false } }
+          }
         }
       });
     } catch (e) {
